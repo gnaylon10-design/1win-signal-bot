@@ -50,6 +50,7 @@ user_data = {}
 
 # === ВСЕ ФУНКЦИИ БОТА ===
 
+# Главное меню
 def main_menu(message):
     chat_id = message.chat.id
     message_id = message.message_id
@@ -81,6 +82,7 @@ def main_menu(message):
     except:
         bot.send_message(chat_id, text, reply_markup=markup)
 
+# Старт
 @bot.message_handler(commands=['start'])
 def start(message):
     chat_id = message.chat.id
@@ -109,6 +111,7 @@ def start(message):
     
     bot.send_message(chat_id, text, reply_markup=markup)
 
+# Обработка кнопок
 @bot.callback_query_handler(func=lambda call: True)
 def callback_handler(call):
     chat_id = call.message.chat.id
@@ -122,16 +125,36 @@ def callback_handler(call):
         msg = bot.send_message(chat_id, "📝 Введите ваш ID из личного кабинета 1WIN:")
         bot.register_next_step_handler(msg, save_id)
     
+    elif call.data == "mines_menu":
+        mines_menu(call.message)
+    
     elif call.data == "back":
         main_menu(call.message)
     
     elif call.data == "support":
         support_message(call.message)
     
+    elif call.data == "play":
+        markup = types.InlineKeyboardMarkup(row_width=1)
+        markup.add(types.InlineKeyboardButton("💎 Играть на 1Win", url="https://one-vv6776.com/?open=register&p=m1cy"))
+        try:
+            bot.edit_message_text(
+                "🎰 Переход на сайт...",
+                chat_id=chat_id,
+                message_id=message_id,
+                reply_markup=markup
+            )
+        except:
+            pass
+    
     elif call.data.startswith("mine_"):
         mines = int(call.data.split("_")[1])
         start_game(call.message, mines)
+    
+    elif call.data == "new_game":
+        mines_menu(call.message)
 
+# Сохранение ID
 def save_id(message):
     chat_id = message.chat.id
     user_id = message.text.strip()
@@ -143,11 +166,14 @@ def save_id(message):
     btn3 = types.InlineKeyboardButton("💣5", callback_data="mine_5")
     btn4 = types.InlineKeyboardButton("💣7", callback_data="mine_7")
     markup.add(btn1, btn2, btn3, btn4)
+    
     markup.row(
         types.InlineKeyboardButton("💎 Играть на 1Win", url="https://one-vv6776.com/?open=register&p=m1cy"),
         types.InlineKeyboardButton("⏪ Назад в меню", callback_data="back")
     )
-    markup.row(types.InlineKeyboardButton("💬 Поддержка", callback_data="support"))
+    markup.row(
+        types.InlineKeyboardButton("💬 Поддержка", callback_data="support")
+    )
     
     try:
         bot.delete_message(chat_id, message.message_id)
@@ -160,13 +186,50 @@ def save_id(message):
         reply_markup=markup
     )
 
+# Меню выбора мин
+def mines_menu(message):
+    chat_id = message.chat.id
+    message_id = message.message_id
+    
+    markup = types.InlineKeyboardMarkup(row_width=4)
+    btn1 = types.InlineKeyboardButton("💣1", callback_data="mine_1")
+    btn2 = types.InlineKeyboardButton("💣3", callback_data="mine_3")
+    btn3 = types.InlineKeyboardButton("💣5", callback_data="mine_5")
+    btn4 = types.InlineKeyboardButton("💣7", callback_data="mine_7")
+    markup.add(btn1, btn2, btn3, btn4)
+    
+    markup.row(
+        types.InlineKeyboardButton("💎 Играть на 1Win", url="https://one-vv6776.com/?open=register&p=m1cy"),
+        types.InlineKeyboardButton("⏪ Назад в меню", callback_data="back")
+    )
+    markup.row(
+        types.InlineKeyboardButton("💬 Поддержка", callback_data="support")
+    )
+    
+    try:
+        bot.edit_message_text(
+            "💣 Выберите количество мин для анализа раунда:",
+            chat_id=chat_id,
+            message_id=message_id,
+            reply_markup=markup
+        )
+    except:
+        bot.send_message(
+            chat_id,
+            "💣 Выберите количество мин для анализа раунда:",
+            reply_markup=markup
+        )
+
+# Поддержка
 def support_message(message):
     chat_id = message.chat.id
     message_id = message.message_id
     
     markup = types.InlineKeyboardMarkup(row_width=1)
     markup.add(types.InlineKeyboardButton("💬 Написать администратору", url="https://t.me/Alexanderii_173"))
-    markup.row(types.InlineKeyboardButton("⏪ Назад в меню", callback_data="back"))
+    markup.row(
+        types.InlineKeyboardButton("⏪ Назад в меню", callback_data="back")
+    )
     
     try:
         bot.edit_message_text(
@@ -182,6 +245,7 @@ def support_message(message):
             reply_markup=markup
         )
 
+# Игра
 def start_game(message, mines):
     chat_id = message.chat.id
     message_id = message.message_id
@@ -209,11 +273,14 @@ def start_game(message, mines):
     btn3 = types.InlineKeyboardButton("💣5", callback_data="mine_5")
     btn4 = types.InlineKeyboardButton("💣7", callback_data="mine_7")
     markup.add(btn1, btn2, btn3, btn4)
+    
     markup.row(
         types.InlineKeyboardButton("💎 Играть на 1Win", url="https://one-vv6776.com/?open=register&p=m1cy"),
         types.InlineKeyboardButton("⏪ Назад в меню", callback_data="back")
     )
-    markup.row(types.InlineKeyboardButton("💬 Поддержка", callback_data="support"))
+    markup.row(
+        types.InlineKeyboardButton("💬 Поддержка", callback_data="support")
+    )
     
     try:
         bot.edit_message_text(
@@ -241,4 +308,6 @@ def start_game(message, mines):
 
 print("✅ Бот запущен!")
 print("🔄 Автопинг активен (каждую минуту)")
+
+# Запускаем бота
 bot.polling()
