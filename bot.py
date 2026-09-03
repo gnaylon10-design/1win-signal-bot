@@ -31,15 +31,17 @@ def keep_alive():
             print("🔄 Автопинг отправлен")
         except Exception as e:
             print(f"❌ Ошибка автопинга: {e}")
-        time.sleep(60)
+        time.sleep(60)  # КАЖДУЮ МИНУТУ
 
 # === ЗАПУСКАЕМ ФЛАСК И АВТОПИНГ В ОТДЕЛЬНЫХ ПОТОКАХ ===
 def run_flask():
     app.run(host='0.0.0.0', port=10000)
 
+# Запускаем Flask
 thread_flask = threading.Thread(target=run_flask)
 thread_flask.start()
 
+# Запускаем автопинг (через 10 секунд после старта)
 time.sleep(10)
 thread_ping = threading.Thread(target=keep_alive)
 thread_ping.start()
@@ -54,7 +56,6 @@ user_data = {}
 def main_menu(message):
     chat_id = message.chat.id
     message_id = message.message_id
-    user_first_name = message.from_user.first_name or "Гость"
     
     markup = types.InlineKeyboardMarkup(row_width=1)
     btn1 = types.InlineKeyboardButton("🌐 Зарегистрироваться на сайте 1WIN", url="https://one-vv6776.com/?open=register&p=m1cy")
@@ -62,7 +63,7 @@ def main_menu(message):
     btn3 = types.InlineKeyboardButton("💬 Поддержка", callback_data="support")
     markup.add(btn1, btn2, btn3)
     
-    text = f"""👋 Приветствую тебя, {user_first_name}! в AI Signals 1Win
+    text = """👋 Приветствую тебя! 
 
 🔥 Чтобы получить максимум от использования этого бота, необходимо следовать следующим шагам:
 
@@ -78,15 +79,23 @@ def main_menu(message):
 👇 Снизу после регистрации нажмите на кнопку "Привязать ID" """
     
     try:
-        bot.edit_message_text(text, chat_id=chat_id, message_id=message_id, reply_markup=markup)
+        bot.edit_message_text(
+            text,
+            chat_id=chat_id,
+            message_id=message_id,
+            reply_markup=markup
+        )
     except:
-        bot.send_message(chat_id, text, reply_markup=markup)
+        bot.send_message(
+            chat_id,
+            text,
+            reply_markup=markup
+        )
 
 # Старт
 @bot.message_handler(commands=['start'])
 def start(message):
     chat_id = message.chat.id
-    user_first_name = message.from_user.first_name or "Гость"
     
     markup = types.InlineKeyboardMarkup(row_width=1)
     btn1 = types.InlineKeyboardButton("🌐 Зарегистрироваться на сайте 1WIN", url="https://one-vv6776.com/?open=register&p=m1cy")
@@ -94,7 +103,7 @@ def start(message):
     btn3 = types.InlineKeyboardButton("💬 Поддержка", callback_data="support")
     markup.add(btn1, btn2, btn3)
     
-    text = f"""👋 Приветствую тебя, {user_first_name}! в AI Signals 1Win
+    text = """👋 Приветствую тебя! 
 
 🔥 Чтобы получить максимум от использования этого бота, необходимо следовать следующим шагам:
 
@@ -109,7 +118,11 @@ def start(message):
 
 👇 Снизу после регистрации нажмите на кнопку "Привязать ID" """
     
-    bot.send_message(chat_id, text, reply_markup=markup)
+    bot.send_message(
+        chat_id,
+        text,
+        reply_markup=markup
+    )
 
 # Обработка кнопок
 @bot.callback_query_handler(func=lambda call: True)
@@ -167,6 +180,7 @@ def save_id(message):
     btn4 = types.InlineKeyboardButton("💣7", callback_data="mine_7")
     markup.add(btn1, btn2, btn3, btn4)
     
+    # Кнопки внизу
     markup.row(
         types.InlineKeyboardButton("💎 Играть на 1Win", url="https://one-vv6776.com/?open=register&p=m1cy"),
         types.InlineKeyboardButton("⏪ Назад в меню", callback_data="back")
@@ -198,6 +212,7 @@ def mines_menu(message):
     btn4 = types.InlineKeyboardButton("💣7", callback_data="mine_7")
     markup.add(btn1, btn2, btn3, btn4)
     
+    # Кнопки внизу
     markup.row(
         types.InlineKeyboardButton("💎 Играть на 1Win", url="https://one-vv6776.com/?open=register&p=m1cy"),
         types.InlineKeyboardButton("⏪ Назад в меню", callback_data="back")
@@ -250,23 +265,30 @@ def start_game(message, mines):
     chat_id = message.chat.id
     message_id = message.message_id
     
+    # Генерация поля 5x5
     cells = [['⬛' for _ in range(5)] for _ in range(5)]
     safe_cells = 25 - mines
+    
+    # Вычисление вероятности и коэффициента
     probability = round((safe_cells / 25) * 100, 1)
     coefficient = round(25 / safe_cells, 2)
     
+    # Генерация безопасных клеток (ровно столько, сколько мин)
     safe_positions = random.sample(range(25), mines)
     safe_positions = sorted(safe_positions)
     
+    # Размещаем звёзды (количество = количество мин)
     for pos in safe_positions:
         row = pos // 5
         col = pos % 5
         cells[row][col] = '⭐'
     
+    # Формируем поле для вывода
     field = ""
     for row in cells:
         field += ' '.join(row) + '\n'
     
+    # Кнопки с выбором бомб (4 в ряд)
     markup = types.InlineKeyboardMarkup(row_width=4)
     btn1 = types.InlineKeyboardButton("💣1", callback_data="mine_1")
     btn2 = types.InlineKeyboardButton("💣3", callback_data="mine_3")
@@ -274,6 +296,7 @@ def start_game(message, mines):
     btn4 = types.InlineKeyboardButton("💣7", callback_data="mine_7")
     markup.add(btn1, btn2, btn3, btn4)
     
+    # Кнопки внизу
     markup.row(
         types.InlineKeyboardButton("💎 Играть на 1Win", url="https://one-vv6776.com/?open=register&p=m1cy"),
         types.InlineKeyboardButton("⏪ Назад в меню", callback_data="back")
