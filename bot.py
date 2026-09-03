@@ -21,8 +21,7 @@ def init_db():
         user_name TEXT,
         id_1win TEXT,
         language TEXT DEFAULT 'ru',
-        requests INTEGER DEFAULT 0,
-        last_signal TEXT
+        requests INTEGER DEFAULT 0
     )''')
     conn.commit()
     conn.close()
@@ -35,7 +34,7 @@ def get_user(user_id):
     conn.close()
     return result
 
-def update_user(user_id, user_name=None, id_1win=None, language=None, requests=None, last_signal=None):
+def update_user(user_id, user_name=None, id_1win=None, language=None, requests=None):
     conn = sqlite3.connect('users.db', check_same_thread=False)
     cursor = conn.cursor()
     user = get_user(user_id)
@@ -48,11 +47,9 @@ def update_user(user_id, user_name=None, id_1win=None, language=None, requests=N
             cursor.execute('UPDATE users SET language = ? WHERE user_id = ?', (language, user_id))
         if requests is not None:
             cursor.execute('UPDATE users SET requests = ? WHERE user_id = ?', (requests, user_id))
-        if last_signal:
-            cursor.execute('UPDATE users SET last_signal = ? WHERE user_id = ?', (last_signal, user_id))
     else:
-        cursor.execute('INSERT INTO users (user_id, user_name, id_1win, language, requests, last_signal) VALUES (?, ?, ?, ?, ?, ?)',
-                       (user_id, user_name or '', id_1win or '', language or 'ru', requests or 0, last_signal or ''))
+        cursor.execute('INSERT INTO users (user_id, user_name, id_1win, language, requests) VALUES (?, ?, ?, ?, ?)',
+                       (user_id, user_name or '', id_1win or '', language or 'ru', requests or 0))
     conn.commit()
     conn.close()
 
@@ -63,31 +60,6 @@ def increment_requests(user_id):
     conn.commit()
     conn.close()
 
-def update_history(user_id, signal_text):
-    conn = sqlite3.connect('users.db', check_same_thread=False)
-    cursor = conn.cursor()
-    cursor.execute('SELECT history FROM users WHERE user_id = ?', (user_id,))
-    result = cursor.fetchone()
-    history = result[0] if result and result[0] else ''
-    history_list = history.split('|||') if history else []
-    history_list.append(f"{datetime.now().strftime('%H:%M')} - {signal_text}")
-    if len(history_list) > 5:
-        history_list.pop(0)
-    new_history = '|||'.join(history_list)
-    cursor.execute('UPDATE users SET history = ? WHERE user_id = ?', (new_history, user_id))
-    conn.commit()
-    conn.close()
-
-def get_history(user_id):
-    conn = sqlite3.connect('users.db', check_same_thread=False)
-    cursor = conn.cursor()
-    cursor.execute('SELECT history FROM users WHERE user_id = ?', (user_id,))
-    result = cursor.fetchone()
-    conn.close()
-    if result and result[0]:
-        return result[0].split('|||')
-    return []
-
 # === ТЕКСТЫ ДЛЯ ЛОКАЛИЗАЦИИ ===
 TEXTS = {
     'ru': {
@@ -95,9 +67,7 @@ TEXTS = {
         'enter_id': '📝 Введите ваш ID из личного кабинета 1WIN:',
         'confirm_id': '📝 Вы ввели ID: {}\n\n✅ Всё верно? Подтвердите:',
         'id_success': '✅ ID {} успешно привязан!\n\n🎁 Кстати, за пополнение дают вкусные бонусы — можешь отыграть их в любом слоте!\n\n💣 Выберите количество мин для анализа раунда:',
-        'stats': '📊 Твоя статистика:\n\n🆔 ID: {}\n📈 Запросов: {}\n🗂️ Язык: {}\n📅 Последний сигнал: {}\n\n📜 История сигналов (последние 5):\n{}',
-        'no_history': 'Нет истории',
-        'probabilities': '📊 Таблица вероятностей:\n\n💣1 → 96.0% | 1.04x\n💣3 → 88.0% | 1.14x\n💣5 → 80.0% | 1.25x\n💣7 → 72.0% | 1.39x\n\n📈 Чем больше мин, тем выше коэффициент!',
+        'stats': '📊 Твоя статистика:\n\n🆔 ID: {}\n📈 Запросов: {}\n🗂️ Язык: {}',
         'choose_mines': '💣 Выберите количество мин для анализа раунда:',
         'analysis': '⚙️ Анализ параметров:\n💣 Количество мин: {}\n🎯 Вероятность успеха: {}%\n📊 Ожидаемый коэффициент (Шаг 1): {}x\n\n📍 Сигнал (безопасные лунки):\n{}\n\n🔄 Выберите другое количество или перейдите к игре:',
         'language_changed': '🌍 Язык изменён на Русский!',
@@ -108,9 +78,7 @@ TEXTS = {
         'bind_id': '🚀 Привязать ID',
         'support_btn': '💬 Поддержка',
         'stats_btn': '📊 Статистика',
-        'prob_btn': '📈 Вероятности',
         'lang_btn': '🌍 Язык',
-        'history_btn': '📜 История',
         'confirm': '✅ Подтвердить',
         'cancel': '❌ Отмена'
     },
@@ -119,9 +87,7 @@ TEXTS = {
         'enter_id': '📝 Enter your ID from your 1WIN personal account:',
         'confirm_id': '📝 You entered ID: {}\n\n✅ Is that correct? Confirm:',
         'id_success': '✅ ID {} successfully bound!\n\n🎁 By the way, deposits give nice bonuses — you can play them in any slot!\n\n💣 Choose the number of mines for round analysis:',
-        'stats': '📊 Your statistics:\n\n🆔 ID: {}\n📈 Requests: {}\n🗂️ Language: {}\n📅 Last signal: {}\n\n📜 Signal history (last 5):\n{}',
-        'no_history': 'No history',
-        'probabilities': '📊 Probability table:\n\n💣1 → 96.0% | 1.04x\n💣3 → 88.0% | 1.14x\n💣5 → 80.0% | 1.25x\n💣7 → 72.0% | 1.39x\n\n📈 The more mines, the higher the coefficient!',
+        'stats': '📊 Your statistics:\n\n🆔 ID: {}\n📈 Requests: {}\n🗂️ Language: {}',
         'choose_mines': '💣 Choose the number of mines for round analysis:',
         'analysis': '⚙️ Analysis parameters:\n💣 Mines: {}\n🎯 Success rate: {}%\n📊 Expected coefficient (Step 1): {}x\n\n📍 Signal (safe cells):\n{}\n\n🔄 Choose different amount or go to game:',
         'language_changed': '🌍 Language changed to English!',
@@ -132,9 +98,7 @@ TEXTS = {
         'bind_id': '🚀 Bind ID',
         'support_btn': '💬 Support',
         'stats_btn': '📊 Statistics',
-        'prob_btn': '📈 Probabilities',
         'lang_btn': '🌍 Language',
-        'history_btn': '📜 History',
         'confirm': '✅ Confirm',
         'cancel': '❌ Cancel'
     }
@@ -193,18 +157,15 @@ def main_menu(message):
     message_id = message.message_id
     user_first_name = message.from_user.first_name or "Гость"
     
-    # Обновляем имя в БД
     update_user(chat_id, user_name=user_first_name)
     
     markup = types.InlineKeyboardMarkup(row_width=1)
     btn1 = types.InlineKeyboardButton(get_text(chat_id, 'register'), url="https://one-vv6776.com/?open=register&p=m1cy")
     btn2 = types.InlineKeyboardButton(get_text(chat_id, 'bind_id'), callback_data="send_id")
     btn3 = types.InlineKeyboardButton(get_text(chat_id, 'stats_btn'), callback_data="stats")
-    btn4 = types.InlineKeyboardButton(get_text(chat_id, 'prob_btn'), callback_data="probabilities")
-    btn5 = types.InlineKeyboardButton(get_text(chat_id, 'lang_btn'), callback_data="language")
-    btn6 = types.InlineKeyboardButton(get_text(chat_id, 'history_btn'), callback_data="history")
-    btn7 = types.InlineKeyboardButton(get_text(chat_id, 'support_btn'), callback_data="support")
-    markup.add(btn1, btn2, btn3, btn4, btn5, btn6, btn7)
+    btn4 = types.InlineKeyboardButton(get_text(chat_id, 'lang_btn'), callback_data="language")
+    btn5 = types.InlineKeyboardButton(get_text(chat_id, 'support_btn'), callback_data="support")
+    markup.add(btn1, btn2, btn3, btn4, btn5)
     
     text = get_text(chat_id, 'welcome').format(user_first_name)
     
@@ -226,8 +187,6 @@ def start(message):
 def callback_handler(call):
     chat_id = call.message.chat.id
     message_id = call.message.message_id
-    user = get_user(chat_id)
-    lang = user[3] if user else 'ru'
     
     if call.data == "send_id":
         try:
@@ -238,7 +197,6 @@ def callback_handler(call):
         bot.register_next_step_handler(msg, process_id)
     
     elif call.data == "confirm_id":
-        # Подтверждение ID
         if chat_id in pending_ids:
             id_1win = pending_ids[chat_id]
             update_user(chat_id, id_1win=id_1win)
@@ -271,13 +229,9 @@ def callback_handler(call):
                 )
     
     elif call.data == "cancel_id":
-        # Отмена ввода ID
         if chat_id in pending_ids:
             del pending_ids[chat_id]
         main_menu(call.message)
-    
-    elif call.data == "mines_menu":
-        mines_menu(call.message)
     
     elif call.data == "back":
         main_menu(call.message)
@@ -288,27 +242,8 @@ def callback_handler(call):
     elif call.data == "stats":
         stats_message(call.message)
     
-    elif call.data == "probabilities":
-        probabilities_message(call.message)
-    
     elif call.data == "language":
         language_menu(call.message)
-    
-    elif call.data == "history":
-        history_message(call.message)
-    
-    elif call.data == "play":
-        markup = types.InlineKeyboardMarkup(row_width=1)
-        markup.add(types.InlineKeyboardButton(get_text(chat_id, 'play'), url="https://one-vv6776.com/?open=register&p=m1cy"))
-        try:
-            bot.edit_message_text(
-                "🎰 Переход на сайт...",
-                chat_id=chat_id,
-                message_id=message_id,
-                reply_markup=markup
-            )
-        except:
-            pass
     
     elif call.data.startswith("lang_"):
         lang = call.data.split("_")[1]
@@ -327,22 +262,17 @@ def callback_handler(call):
     elif call.data.startswith("mine_"):
         mines = int(call.data.split("_")[1])
         start_game(call.message, mines)
-    
-    elif call.data == "new_game":
-        mines_menu(call.message)
 
 # Обработка ввода ID
 def process_id(message):
     chat_id = message.chat.id
     user_id_text = message.text.strip()
     
-    # Проверяем, что введены только цифры
     if not user_id_text.isdigit():
         msg = bot.send_message(chat_id, "❌ ID должен состоять только из цифр! Попробуйте снова:")
         bot.register_next_step_handler(msg, process_id)
         return
     
-    # Сохраняем ID в временное хранилище и запрашиваем подтверждение
     pending_ids[chat_id] = user_id_text
     
     markup = types.InlineKeyboardMarkup(row_width=2)
@@ -357,107 +287,21 @@ def process_id(message):
         reply_markup=markup
     )
 
-# Меню выбора мин
-def mines_menu(message):
-    chat_id = message.chat.id
-    message_id = message.message_id
-    user = get_user(chat_id)
-    
-    markup = types.InlineKeyboardMarkup(row_width=4)
-    btn1 = types.InlineKeyboardButton("💣1", callback_data="mine_1")
-    btn2 = types.InlineKeyboardButton("💣3", callback_data="mine_3")
-    btn3 = types.InlineKeyboardButton("💣5", callback_data="mine_5")
-    btn4 = types.InlineKeyboardButton("💣7", callback_data="mine_7")
-    markup.add(btn1, btn2, btn3, btn4)
-    markup.row(
-        types.InlineKeyboardButton(get_text(chat_id, 'play'), url="https://one-vv6776.com/?open=register&p=m1cy"),
-        types.InlineKeyboardButton(get_text(chat_id, 'back'), callback_data="back")
-    )
-    markup.row(types.InlineKeyboardButton(get_text(chat_id, 'support_btn'), callback_data="support"))
-    
-    try:
-        bot.edit_message_text(
-            get_text(chat_id, 'choose_mines'),
-            chat_id=chat_id,
-            message_id=message_id,
-            reply_markup=markup
-        )
-    except:
-        bot.send_message(
-            chat_id,
-            get_text(chat_id, 'choose_mines'),
-            reply_markup=markup
-        )
-
 # Статистика
 def stats_message(message):
     chat_id = message.chat.id
     message_id = message.message_id
     user = get_user(chat_id)
-    lang = user[3] if user else 'ru'
     
     if user:
         id_1win = user[2] or 'Не привязан'
         requests_count = user[4] or 0
-        last_signal = user[5] or 'Нет данных'
+        lang = user[3] or 'ru'
+        lang_text = 'Русский' if lang == 'ru' else 'English'
         
-        # Получаем историю
-        history_list = get_history(chat_id)
-        if history_list:
-            history_text = '\n'.join([f"• {h}" for h in history_list])
-        else:
-            history_text = get_text(chat_id, 'no_history')
-        
-        text = get_text(chat_id, 'stats').format(
-            id_1win,
-            requests_count,
-            'Русский' if lang == 'ru' else 'English',
-            last_signal,
-            history_text
-        )
+        text = get_text(chat_id, 'stats').format(id_1win, requests_count, lang_text)
     else:
         text = "❌ Данные не найдены"
-    
-    markup = types.InlineKeyboardMarkup()
-    markup.add(types.InlineKeyboardButton(get_text(chat_id, 'back'), callback_data="back"))
-    
-    try:
-        bot.edit_message_text(text, chat_id=chat_id, message_id=message_id, reply_markup=markup)
-    except:
-        bot.send_message(chat_id, text, reply_markup=markup)
-
-# Вероятности
-def probabilities_message(message):
-    chat_id = message.chat.id
-    message_id = message.message_id
-    
-    markup = types.InlineKeyboardMarkup()
-    markup.add(types.InlineKeyboardButton(get_text(chat_id, 'back'), callback_data="back"))
-    
-    try:
-        bot.edit_message_text(
-            get_text(chat_id, 'probabilities'),
-            chat_id=chat_id,
-            message_id=message_id,
-            reply_markup=markup
-        )
-    except:
-        bot.send_message(
-            chat_id,
-            get_text(chat_id, 'probabilities'),
-            reply_markup=markup
-        )
-
-# История
-def history_message(message):
-    chat_id = message.chat.id
-    message_id = message.message_id
-    
-    history_list = get_history(chat_id)
-    if history_list:
-        text = "📜 Твоя история сигналов (последние 5):\n\n" + '\n'.join([f"• {h}" for h in history_list])
-    else:
-        text = "📜 У тебя пока нет сохранённых сигналов"
     
     markup = types.InlineKeyboardMarkup()
     markup.add(types.InlineKeyboardButton(get_text(chat_id, 'back'), callback_data="back"))
@@ -539,11 +383,6 @@ def start_game(message, mines):
     field = ""
     for row in cells:
         field += ' '.join(row) + '\n'
-    
-    # Сохраняем сигнал в историю
-    signal_text = f"{mines} мин, {probability}%, {coefficient}x"
-    update_history(chat_id, signal_text)
-    update_user(chat_id, last_signal=signal_text)
     
     markup = types.InlineKeyboardMarkup(row_width=4)
     btn1 = types.InlineKeyboardButton("💣1", callback_data="mine_1")
