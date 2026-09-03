@@ -50,14 +50,6 @@ def increment_requests(user_id):
     conn.commit()
     conn.close()
 
-def get_all_users():
-    conn = sqlite3.connect('users.db')
-    cursor = conn.cursor()
-    cursor.execute('SELECT user_id FROM users')
-    result = cursor.fetchall()
-    conn.close()
-    return result
-
 init_db()
 
 # === СОЗДАЁМ ФЛАСК-СЕРВЕР ДЛЯ ПИНГА ===
@@ -71,7 +63,6 @@ def index():
 def ping():
     return "pong", 200
 
-# === ФУНКЦИЯ ДЛЯ АВТОПИНГА (КАЖДУЮ МИНУТУ) ===
 def keep_alive():
     url = f"https://{os.environ.get('RENDER_EXTERNAL_HOSTNAME', 'localhost')}/ping"
     while True:
@@ -82,7 +73,6 @@ def keep_alive():
             print(f"❌ Ошибка автопинга: {e}")
         time.sleep(60)
 
-# === ЗАПУСКАЕМ ФЛАСК И АВТОПИНГ В ОТДЕЛЬНЫХ ПОТОКАХ ===
 def run_flask():
     app.run(host='0.0.0.0', port=10000)
 
@@ -97,7 +87,6 @@ thread_ping.start()
 bot = telebot.TeleBot(TOKEN)
 user_data = {}
 
-# === ФУНКЦИЯ ГРАФИКА ВЕРОЯТНОСТЕЙ ===
 def get_probabilities_table():
     table = "📊 *Таблица вероятностей и коэффициентов:*\n\n"
     for mines in [1, 3, 5, 7]:
@@ -115,23 +104,31 @@ def main_menu(message):
     user_first_name = message.from_user.first_name or "Гость"
     
     user_data_db = get_user(chat_id)
+    has_id = user_data_db and user_data_db[2]
+    has_played = user_data.get(chat_id, {}).get('played', False)
     
     markup = types.InlineKeyboardMarkup(row_width=1)
-    btn1 = types.InlineKeyboardButton("🌐 Зарегистрироваться на сайте 1WIN", url="https://one-vv6776.com/?open=register&p=m1cy")
-    markup.add(btn1)
     
-    if user_data_db and user_data_db[2]:
-        btn2 = types.InlineKeyboardButton("🚀 Привязать ID (изменить)", callback_data="send_id")
-        btn_stats = types.InlineKeyboardButton("📊 Моя статистика", callback_data="stats")
-        markup.add(btn2, btn_stats)
+    # Кнопка регистрации
+    markup.add(types.InlineKeyboardButton("🌐 Зарегистрироваться на сайте 1WIN", url="https://one-vv6776.com/?open=register&p=m1cy"))
+    
+    # Кнопка привязки ID
+    if has_id:
+        markup.add(types.InlineKeyboardButton("🚀 Привязать ID (изменить)", callback_data="send_id"))
     else:
-        btn2 = types.InlineKeyboardButton("🚀 Привязать ID", callback_data="send_id")
-        markup.add(btn2)
+        markup.add(types.InlineKeyboardButton("🚀 Привязать ID", callback_data="send_id"))
     
-    btn3 = types.InlineKeyboardButton("📈 График вероятностей", callback_data="probabilities")
-    markup.add(btn3)
+    # Кнопка "Моя статистика" — всегда видна
+    markup.add(types.InlineKeyboardButton("📊 Моя статистика", callback_data="stats"))
     
-    # Кнопка поддержки отдельно внизу
+    # Кнопка "График вероятностей"
+    markup.add(types.InlineKeyboardButton("📈 График вероятностей", callback_data="probabilities"))
+    
+    # Кнопка "Играть" — появляется после первого анализа
+    if has_played:
+        markup.add(types.InlineKeyboardButton("💣 Играть", callback_data="play_game"))
+    
+    # Кнопка поддержки внизу
     markup.add(types.InlineKeyboardButton("💬 Поддержка", callback_data="support"))
     
     text = f"""👋 Приветствую тебя, {user_first_name}! в AI Signals 1Win
@@ -174,22 +171,24 @@ def start(message):
     if not user_data_db:
         save_user(chat_id, user_name, None)
     
+    has_id = user_data_db and user_data_db[2] if user_data_db else False
+    has_played = user_data.get(chat_id, {}).get('played', False)
+    
     markup = types.InlineKeyboardMarkup(row_width=1)
-    btn1 = types.InlineKeyboardButton("🌐 Зарегистрироваться на сайте 1WIN", url="https://one-vv6776.com/?open=register&p=m1cy")
-    markup.add(btn1)
     
-    if user_data_db and user_data_db[2]:
-        btn2 = types.InlineKeyboardButton("🚀 Привязать ID (изменить)", callback_data="send_id")
-        btn_stats = types.InlineKeyboardButton("📊 Моя статистика", callback_data="stats")
-        markup.add(btn2, btn_stats)
+    markup.add(types.InlineKeyboardButton("🌐 Зарегистрироваться на сайте 1WIN", url="https://one-vv6776.com/?open=register&p=m1cy"))
+    
+    if has_id:
+        markup.add(types.InlineKeyboardButton("🚀 Привязать ID (изменить)", callback_data="send_id"))
     else:
-        btn2 = types.InlineKeyboardButton("🚀 Привязать ID", callback_data="send_id")
-        markup.add(btn2)
+        markup.add(types.InlineKeyboardButton("🚀 Привязать ID", callback_data="send_id"))
     
-    btn3 = types.InlineKeyboardButton("📈 График вероятностей", callback_data="probabilities")
-    markup.add(btn3)
+    markup.add(types.InlineKeyboardButton("📊 Моя статистика", callback_data="stats"))
+    markup.add(types.InlineKeyboardButton("📈 График вероятностей", callback_data="probabilities"))
     
-    # Кнопка поддержки отдельно внизу
+    if has_played:
+        markup.add(types.InlineKeyboardButton("💣 Играть", callback_data="play_game"))
+    
     markup.add(types.InlineKeyboardButton("💬 Поддержка", callback_data="support"))
     
     text = f"""👋 Приветствую тебя, {user_first_name}! в AI Signals 1Win
@@ -229,10 +228,13 @@ def show_stats(message):
     
     user_id, user_name, id_1win, requests_count, registered_date = user_data_db
     
-    text = f"📊 *Твоя статистика:*\n\n"
-    text += f"🆔 *ID в 1WIN:* {id_1win or 'Не привязан'}\n"
-    text += f"📈 *Запросов сигналов:* {requests_count}\n"
-    text += f"📅 *Дата регистрации:* {registered_date or 'Неизвестно'}\n"
+    if not id_1win:
+        text = "❌ *ID не привязан!*\n\nПожалуйста, нажмите 'Привязать ID' в главном меню."
+    else:
+        text = f"📊 *Твоя статистика:*\n\n"
+        text += f"🆔 *ID в 1WIN:* {id_1win}\n"
+        text += f"📈 *Запросов сигналов:* {requests_count}\n"
+        text += f"📅 *Дата регистрации:* {registered_date or 'Неизвестно'}\n"
     
     markup = types.InlineKeyboardMarkup(row_width=1)
     markup.add(types.InlineKeyboardButton("⏪ Назад в меню", callback_data="back"))
@@ -288,6 +290,10 @@ def callback_handler(call):
     elif call.data == "support":
         support_message(call.message)
     
+    elif call.data == "play_game":
+        # Переход в меню выбора мин
+        mines_menu(call.message)
+    
     elif call.data == "confirm_id":
         temp_id = user_data.get(chat_id, {}).get('temp_id')
         if temp_id:
@@ -318,19 +324,6 @@ def callback_handler(call):
     
     elif call.data == "new_game":
         mines_menu(call.message)
-    
-    elif call.data == "play":
-        markup = types.InlineKeyboardMarkup(row_width=1)
-        markup.add(types.InlineKeyboardButton("💎 Играть на 1Win", url="https://one-vv6776.com/?open=register&p=m1cy"))
-        try:
-            bot.edit_message_text(
-                "🎰 Переход на сайт...",
-                chat_id=chat_id,
-                message_id=message_id,
-                reply_markup=markup
-            )
-        except:
-            pass
 
 # === ОБРАБОТКА ВВОДА ID ===
 def process_id_input(message):
@@ -446,6 +439,11 @@ def start_game(message, mines):
     chat_id = message.chat.id
     message_id = message.message_id
     
+    # Отмечаем, что пользователь играл
+    if chat_id not in user_data:
+        user_data[chat_id] = {}
+    user_data[chat_id]['played'] = True
+    
     increment_requests(chat_id)
     
     cells = [['⬛' for _ in range(5)] for _ in range(5)]
@@ -507,5 +505,4 @@ def start_game(message, mines):
 print("✅ Бот запущен!")
 print("🔄 Автопинг активен (каждую минуту)")
 
-# Запускаем бота
 bot.polling()
