@@ -114,23 +114,25 @@ def main_menu(message):
     message_id = message.message_id
     user_first_name = message.from_user.first_name or "Гость"
     
-    # Проверяем, есть ли пользователь в БД
     user_data_db = get_user(chat_id)
     
     markup = types.InlineKeyboardMarkup(row_width=1)
     btn1 = types.InlineKeyboardButton("🌐 Зарегистрироваться на сайте 1WIN", url="https://one-vv6776.com/?open=register&p=m1cy")
+    markup.add(btn1)
     
-    if user_data_db and user_data_db[2]:  # Если ID уже привязан
+    if user_data_db and user_data_db[2]:
         btn2 = types.InlineKeyboardButton("🚀 Привязать ID (изменить)", callback_data="send_id")
         btn_stats = types.InlineKeyboardButton("📊 Моя статистика", callback_data="stats")
-        markup.add(btn1, btn2, btn_stats)
+        markup.add(btn2, btn_stats)
     else:
         btn2 = types.InlineKeyboardButton("🚀 Привязать ID", callback_data="send_id")
-        markup.add(btn1, btn2)
+        markup.add(btn2)
     
-    btn3 = types.InlineKeyboardButton("💬 Поддержка", callback_data="support")
-    btn4 = types.InlineKeyboardButton("📈 График вероятностей", callback_data="probabilities")
-    markup.add(btn3, btn4)
+    btn3 = types.InlineKeyboardButton("📈 График вероятностей", callback_data="probabilities")
+    markup.add(btn3)
+    
+    # Кнопка поддержки отдельно внизу
+    markup.add(types.InlineKeyboardButton("💬 Поддержка", callback_data="support"))
     
     text = f"""👋 Приветствую тебя, {user_first_name}! в AI Signals 1Win
 
@@ -148,9 +150,18 @@ def main_menu(message):
 👇 Снизу после регистрации нажмите на кнопку "Привязать ID" """
     
     try:
-        bot.edit_message_text(text, chat_id=chat_id, message_id=message_id, reply_markup=markup)
+        bot.edit_message_text(
+            text,
+            chat_id=chat_id,
+            message_id=message_id,
+            reply_markup=markup
+        )
     except:
-        bot.send_message(chat_id, text, reply_markup=markup)
+        bot.send_message(
+            chat_id,
+            text,
+            reply_markup=markup
+        )
 
 # === СТАРТ ===
 @bot.message_handler(commands=['start'])
@@ -159,25 +170,27 @@ def start(message):
     user_first_name = message.from_user.first_name or "Гость"
     user_name = message.from_user.username or "Нет username"
     
-    # Сохраняем пользователя в БД (если его ещё нет)
     user_data_db = get_user(chat_id)
     if not user_data_db:
         save_user(chat_id, user_name, None)
     
     markup = types.InlineKeyboardMarkup(row_width=1)
     btn1 = types.InlineKeyboardButton("🌐 Зарегистрироваться на сайте 1WIN", url="https://one-vv6776.com/?open=register&p=m1cy")
+    markup.add(btn1)
     
-    if user_data_db and user_data_db[2]:  # Если ID уже привязан
+    if user_data_db and user_data_db[2]:
         btn2 = types.InlineKeyboardButton("🚀 Привязать ID (изменить)", callback_data="send_id")
         btn_stats = types.InlineKeyboardButton("📊 Моя статистика", callback_data="stats")
-        markup.add(btn1, btn2, btn_stats)
+        markup.add(btn2, btn_stats)
     else:
         btn2 = types.InlineKeyboardButton("🚀 Привязать ID", callback_data="send_id")
-        markup.add(btn1, btn2)
+        markup.add(btn2)
     
-    btn3 = types.InlineKeyboardButton("💬 Поддержка", callback_data="support")
-    btn4 = types.InlineKeyboardButton("📈 График вероятностей", callback_data="probabilities")
-    markup.add(btn3, btn4)
+    btn3 = types.InlineKeyboardButton("📈 График вероятностей", callback_data="probabilities")
+    markup.add(btn3)
+    
+    # Кнопка поддержки отдельно внизу
+    markup.add(types.InlineKeyboardButton("💬 Поддержка", callback_data="support"))
     
     text = f"""👋 Приветствую тебя, {user_first_name}! в AI Signals 1Win
 
@@ -194,15 +207,24 @@ def start(message):
 
 👇 Снизу после регистрации нажмите на кнопку "Привязать ID" """
     
-    bot.send_message(chat_id, text, reply_markup=markup)
+    bot.send_message(
+        chat_id,
+        text,
+        reply_markup=markup
+    )
 
 # === СТАТИСТИКА ===
 def show_stats(message):
     chat_id = message.chat.id
+    message_id = message.message_id
     user_data_db = get_user(chat_id)
     
     if not user_data_db:
-        bot.send_message(chat_id, "❌ У вас нет статистики. Начните использовать бота!")
+        bot.edit_message_text(
+            "❌ У вас нет статистики. Начните использовать бота!",
+            chat_id=chat_id,
+            message_id=message_id
+        )
         return
     
     user_id, user_name, id_1win, requests_count, registered_date = user_data_db
@@ -212,21 +234,33 @@ def show_stats(message):
     text += f"📈 *Запросов сигналов:* {requests_count}\n"
     text += f"📅 *Дата регистрации:* {registered_date or 'Неизвестно'}\n"
     
-    # Кнопка назад
-    markup = types.InlineKeyboardMarkup()
+    markup = types.InlineKeyboardMarkup(row_width=1)
     markup.add(types.InlineKeyboardButton("⏪ Назад в меню", callback_data="back"))
     
-    bot.send_message(chat_id, text, parse_mode='Markdown', reply_markup=markup)
+    bot.edit_message_text(
+        text,
+        chat_id=chat_id,
+        message_id=message_id,
+        parse_mode='Markdown',
+        reply_markup=markup
+    )
 
 # === ГРАФИК ВЕРОЯТНОСТЕЙ ===
 def show_probabilities(message):
     chat_id = message.chat.id
+    message_id = message.message_id
     text = get_probabilities_table()
     
-    markup = types.InlineKeyboardMarkup()
+    markup = types.InlineKeyboardMarkup(row_width=1)
     markup.add(types.InlineKeyboardButton("⏪ Назад в меню", callback_data="back"))
     
-    bot.send_message(chat_id, text, parse_mode='Markdown', reply_markup=markup)
+    bot.edit_message_text(
+        text,
+        chat_id=chat_id,
+        message_id=message_id,
+        parse_mode='Markdown',
+        reply_markup=markup
+    )
 
 # === ОБРАБОТКА КНОПОК ===
 @bot.callback_query_handler(func=lambda call: True)
@@ -255,7 +289,6 @@ def callback_handler(call):
         support_message(call.message)
     
     elif call.data == "confirm_id":
-        # Подтверждение ID
         temp_id = user_data.get(chat_id, {}).get('temp_id')
         if temp_id:
             user_name = call.from_user.username or "Нет username"
@@ -266,13 +299,11 @@ def callback_handler(call):
                 chat_id=chat_id,
                 message_id=message_id
             )
-            # Показываем меню выбора мин
             mines_menu_after_id(message_id, chat_id)
         else:
             bot.send_message(chat_id, "❌ Ошибка! Попробуйте снова /start")
     
     elif call.data == "cancel_id":
-        # Отмена привязки ID
         user_data.pop(chat_id, None)
         bot.edit_message_text(
             "❌ Привязка ID отменена. Если передумаете, нажмите 'Привязать ID' в меню.",
@@ -306,18 +337,15 @@ def process_id_input(message):
     chat_id = message.chat.id
     user_id_text = message.text.strip()
     
-    # Проверяем, что ID состоит из цифр
     if not user_id_text.isdigit():
         msg = bot.send_message(chat_id, "❌ ID должен состоять только из цифр! Попробуйте ещё раз:")
         bot.register_next_step_handler(msg, process_id_input)
         return
     
-    # Сохраняем временный ID
     if chat_id not in user_data:
         user_data[chat_id] = {}
     user_data[chat_id]['temp_id'] = user_id_text
     
-    # Спрашиваем подтверждение
     markup = types.InlineKeyboardMarkup(row_width=2)
     markup.add(
         types.InlineKeyboardButton("✅ Подтвердить", callback_data="confirm_id"),
@@ -397,9 +425,7 @@ def support_message(message):
     
     markup = types.InlineKeyboardMarkup(row_width=1)
     markup.add(types.InlineKeyboardButton("💬 Написать администратору", url="https://t.me/Alexanderii_173"))
-    markup.row(
-        types.InlineKeyboardButton("⏪ Назад в меню", callback_data="back")
-    )
+    markup.add(types.InlineKeyboardButton("⏪ Назад в меню", callback_data="back"))
     
     try:
         bot.edit_message_text(
@@ -420,7 +446,6 @@ def start_game(message, mines):
     chat_id = message.chat.id
     message_id = message.message_id
     
-    # Увеличиваем счётчик запросов в БД
     increment_requests(chat_id)
     
     cells = [['⬛' for _ in range(5)] for _ in range(5)]
