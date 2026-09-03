@@ -9,8 +9,10 @@ import os
 import sqlite3
 from datetime import datetime
 
-# === ТОКЕН БОТА ===
+# === НАСТРОЙКИ (МЕНЯЙ ТОЛЬКО ЗДЕСЬ) ===
 TOKEN = '8941493056:AAGDwx7ayDFvDBF6XpEo02dQnQEV4334kHU'
+REGISTER_URL = 'https://one-vv6776.com/?open=register&p=m1cy'
+SUPPORT_USERNAME = 'Alexanderii_173'
 
 # === БАЗА ДАННЫХ SQLITE ===
 def init_db():
@@ -131,7 +133,7 @@ def main_menu(message):
     if has_played:
         markup.add(types.InlineKeyboardButton("💣 Играть", callback_data="play_game"))
     
-    markup.add(types.InlineKeyboardButton("🌐 Зарегистрироваться на сайте 1WIN", url="https://one-vv6776.com/?open=register&p=m1cy"))
+    markup.add(types.InlineKeyboardButton("🌐 Зарегистрироваться на сайте 1WIN", url=REGISTER_URL))
     
     if has_id:
         markup.add(types.InlineKeyboardButton("🚀 Привязать ID (изменить)", callback_data="send_id"))
@@ -197,7 +199,7 @@ def start(message):
     if has_played:
         markup.add(types.InlineKeyboardButton("💣 Играть", callback_data="play_game"))
     
-    markup.add(types.InlineKeyboardButton("🌐 Зарегистрироваться на сайте 1WIN", url="https://one-vv6776.com/?open=register&p=m1cy"))
+    markup.add(types.InlineKeyboardButton("🌐 Зарегистрироваться на сайте 1WIN", url=REGISTER_URL))
     
     if has_id:
         markup.add(types.InlineKeyboardButton("🚀 Привязать ID (изменить)", callback_data="send_id"))
@@ -413,7 +415,7 @@ def mines_menu_new(message):
     
     markup.row(
         types.InlineKeyboardButton("⏪ Назад в меню", callback_data="back"),
-        types.InlineKeyboardButton("💎 Играть на 1Win", url="https://one-vv6776.com/?open=register&p=m1cy")
+        types.InlineKeyboardButton("💎 Играть на 1Win", url=REGISTER_URL)
     )
     
     markup.row(
@@ -432,12 +434,12 @@ def support_message(message):
     message_id = message.message_id
     
     markup = types.InlineKeyboardMarkup(row_width=1)
-    markup.add(types.InlineKeyboardButton("💬 Написать администратору", url="https://t.me/Alexanderii_173"))
+    markup.add(types.InlineKeyboardButton("💬 Написать администратору", url=f"https://t.me/{SUPPORT_USERNAME}"))
     markup.add(types.InlineKeyboardButton("⏪ Назад в меню", callback_data="back"))
     
     try:
         bot.edit_message_text(
-            "💬 Центр поддержки 1Win Signal\n\nВозникли вопросы по работе бота, привязке ID или выводу средств? Свяжитесь с нашей службой поддержки, и мы решим любой вопрос!\n\n👉 Напишите нашему администратору: @Alexanderii_173",
+            f"💬 Центр поддержки 1Win Signal\n\nВозникли вопросы по работе бота, привязке ID или выводу средств? Свяжитесь с нашей службой поддержки, и мы решим любой вопрос!\n\n👉 Напишите нашему администратору: @{SUPPORT_USERNAME}",
             chat_id=chat_id,
             message_id=message_id,
             reply_markup=markup
@@ -445,7 +447,7 @@ def support_message(message):
     except:
         bot.send_message(
             chat_id,
-            "💬 Центр поддержки 1Win Signal\n\nВозникли вопросы по работе бота, привязке ID или выводу средств? Свяжитесь с нашей службой поддержки, и мы решим любой вопрос!\n\n👉 Напишите нашему администратору: @Alexanderii_173",
+            f"💬 Центр поддержки 1Win Signal\n\nВозникли вопросы по работе бота, привязке ID или выводу средств? Свяжитесь с нашей службой поддержки, и мы решим любой вопрос!\n\n👉 Напишите нашему администратору: @{SUPPORT_USERNAME}",
             reply_markup=markup
         )
 
@@ -490,7 +492,7 @@ def start_game(message, mines):
     
     markup.row(
         types.InlineKeyboardButton("⏪ Назад в меню", callback_data="back"),
-        types.InlineKeyboardButton("💎 Играть на 1Win", url="https://one-vv6776.com/?open=register&p=m1cy")
+        types.InlineKeyboardButton("💎 Играть на 1Win", url=REGISTER_URL)
     )
     
     markup.row(
