@@ -29,9 +29,18 @@ def init_db():
 def save_user(user_id, user_name, id_1win):
     conn = sqlite3.connect('users.db')
     cursor = conn.cursor()
+    
+    cursor.execute('SELECT user_name FROM users WHERE user_id = ?', (user_id,))
+    existing = cursor.fetchone()
+    
+    if existing and existing[0] and existing[0] != "Нет username":
+        final_name = existing[0]
+    else:
+        final_name = user_name if user_name and user_name != "Нет username" else "Гость"
+    
     cursor.execute('''INSERT OR REPLACE INTO users (user_id, user_name, id_1win, requests, registered_date)
                       VALUES (?, ?, ?, COALESCE((SELECT requests FROM users WHERE user_id = ?), 0), COALESCE((SELECT registered_date FROM users WHERE user_id = ?), ?))''',
-                   (user_id, user_name, id_1win, user_id, user_id, datetime.now().strftime("%Y-%m-%d %H:%M")))
+                   (user_id, final_name, id_1win, user_id, user_id, datetime.now().strftime("%Y-%m-%d %H:%M")))
     conn.commit()
     conn.close()
 
@@ -102,16 +111,18 @@ def main_menu(message):
     chat_id = message.chat.id
     message_id = message.message_id
     
-    try:
-        if hasattr(message, 'from_user') and message.from_user:
-            user_first_name = message.from_user.first_name or "Гость"
-        else:
-            user_data_db = get_user(chat_id)
-            user_first_name = user_data_db[1] if user_data_db and user_data_db[1] else "Гость"
-    except:
-        user_first_name = "Гость"
-    
     user_data_db = get_user(chat_id)
+    
+    if user_data_db and user_data_db[1] and user_data_db[1] != "Нет username":
+        user_first_name = user_data_db[1]
+    else:
+        try:
+            user_first_name = message.from_user.first_name or "Гость"
+            if user_data_db:
+                save_user(chat_id, user_first_name, user_data_db[2])
+        except:
+            user_first_name = "Гость"
+    
     has_id = user_data_db and user_data_db[2] if user_data_db else False
     has_played = user_data.get(chat_id, {}).get('played', False)
     
@@ -173,7 +184,10 @@ def start(message):
     
     user_data_db = get_user(chat_id)
     if not user_data_db:
-        save_user(chat_id, user_name, None)
+        save_user(chat_id, user_first_name, None)
+    else:
+        if not user_data_db[1] or user_data_db[1] == "Нет username":
+            save_user(chat_id, user_first_name, user_data_db[2])
     
     has_id = user_data_db and user_data_db[2] if user_data_db else False
     has_played = user_data.get(chat_id, {}).get('played', False)
