@@ -102,7 +102,6 @@ def main_menu(message):
     chat_id = message.chat.id
     message_id = message.message_id
     
-    # Получаем имя пользователя из Telegram
     try:
         user_first_name = message.from_user.first_name or "Гость"
     except:
@@ -129,9 +128,6 @@ def main_menu(message):
     
     # Кнопка "Моя статистика" — всегда видна
     markup.add(types.InlineKeyboardButton("📊 Моя статистика", callback_data="stats"))
-    
-    # Кнопка "График вероятностей"
-    markup.add(types.InlineKeyboardButton("📈 График вероятностей", callback_data="probabilities"))
     
     # Кнопка поддержки внизу
     markup.add(types.InlineKeyboardButton("💬 Поддержка", callback_data="support"))
@@ -186,7 +182,6 @@ def start(message):
     
     markup = types.InlineKeyboardMarkup(row_width=1)
     
-    # Кнопка "Играть" — на самом верху
     if has_played:
         markup.add(types.InlineKeyboardButton("💣 Играть", callback_data="play_game"))
     
@@ -198,7 +193,6 @@ def start(message):
         markup.add(types.InlineKeyboardButton("🚀 Привязать ID", callback_data="send_id"))
     
     markup.add(types.InlineKeyboardButton("📊 Моя статистика", callback_data="stats"))
-    markup.add(types.InlineKeyboardButton("📈 График вероятностей", callback_data="probabilities"))
     markup.add(types.InlineKeyboardButton("💬 Поддержка", callback_data="support"))
     
     text = f"""👋 Приветствую тебя, {user_first_name}! в AI Signals 1Win
@@ -301,7 +295,6 @@ def callback_handler(call):
         support_message(call.message)
     
     elif call.data == "play_game":
-        # Удаляем текущее сообщение и открываем меню выбора мин
         try:
             bot.delete_message(chat_id, message_id)
         except:
@@ -315,19 +308,16 @@ def callback_handler(call):
             save_user(chat_id, user_name, temp_id)
             user_data[chat_id] = {"id": temp_id}
             
-            # Удаляем сообщение с подтверждением
             try:
                 bot.delete_message(chat_id, message_id)
             except:
                 pass
             
-            # Отправляем сообщение об успехе
             bot.send_message(
                 chat_id,
                 f"✅ ID {temp_id} успешно привязан!\n\n🎁 Кстати, за пополнение дают вкусные бонусы — можешь отыграть их в любом слоте!"
             )
             
-            # Открываем меню выбора мин
             mines_menu_new(call.message)
         else:
             bot.send_message(chat_id, "❌ Ошибка! Попробуйте снова /start")
@@ -335,7 +325,6 @@ def callback_handler(call):
     elif call.data == "cancel_id":
         user_data.pop(chat_id, None)
         
-        # Удаляем сообщение с подтверждением
         try:
             bot.delete_message(chat_id, message_id)
         except:
@@ -359,7 +348,6 @@ def process_id_input(message):
     chat_id = message.chat.id
     user_id_text = message.text.strip()
     
-    # Удаляем сообщение пользователя с ID
     try:
         bot.delete_message(chat_id, message.message_id)
     except:
@@ -400,10 +388,18 @@ def mines_menu_new(message):
     btn4 = types.InlineKeyboardButton("💣7", callback_data="mine_7")
     markup.add(btn1, btn2, btn3, btn4)
     
+    # График вероятностей — отдельной кнопкой
     markup.row(
-        types.InlineKeyboardButton("💎 Играть на 1Win", url="https://one-vv6776.com/?open=register&p=m1cy"),
-        types.InlineKeyboardButton("⏪ Назад в меню", callback_data="back")
+        types.InlineKeyboardButton("📈 График вероятностей", callback_data="probabilities")
     )
+    
+    # Кнопки внизу: Назад в меню слева, Играть на 1Win справа
+    markup.row(
+        types.InlineKeyboardButton("⏪ Назад в меню", callback_data="back"),
+        types.InlineKeyboardButton("💎 Играть на 1Win", url="https://one-vv6776.com/?open=register&p=m1cy")
+    )
+    
+    # Поддержка снизу
     markup.row(
         types.InlineKeyboardButton("💬 Поддержка", callback_data="support")
     )
@@ -442,7 +438,6 @@ def start_game(message, mines):
     chat_id = message.chat.id
     message_id = message.message_id
     
-    # Отмечаем, что пользователь играл
     if chat_id not in user_data:
         user_data[chat_id] = {}
     user_data[chat_id]['played'] = True
@@ -473,10 +468,18 @@ def start_game(message, mines):
     btn4 = types.InlineKeyboardButton("💣7", callback_data="mine_7")
     markup.add(btn1, btn2, btn3, btn4)
     
+    # График вероятностей — отдельной кнопкой
     markup.row(
-        types.InlineKeyboardButton("💎 Играть на 1Win", url="https://one-vv6776.com/?open=register&p=m1cy"),
-        types.InlineKeyboardButton("⏪ Назад в меню", callback_data="back")
+        types.InlineKeyboardButton("📈 График вероятностей", callback_data="probabilities")
     )
+    
+    # Кнопки внизу: Назад в меню слева, Играть на 1Win справа
+    markup.row(
+        types.InlineKeyboardButton("⏪ Назад в меню", callback_data="back"),
+        types.InlineKeyboardButton("💎 Играть на 1Win", url="https://one-vv6776.com/?open=register&p=m1cy")
+    )
+    
+    # Поддержка снизу
     markup.row(
         types.InlineKeyboardButton("💬 Поддержка", callback_data="support")
     )
