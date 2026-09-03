@@ -103,7 +103,11 @@ def main_menu(message):
     message_id = message.message_id
     
     try:
-        user_first_name = message.from_user.first_name or "Гость"
+        if hasattr(message, 'from_user') and message.from_user:
+            user_first_name = message.from_user.first_name or "Гость"
+        else:
+            user_data_db = get_user(chat_id)
+            user_first_name = user_data_db[1] if user_data_db and user_data_db[1] else "Гость"
     except:
         user_first_name = "Гость"
     
@@ -113,23 +117,17 @@ def main_menu(message):
     
     markup = types.InlineKeyboardMarkup(row_width=1)
     
-    # Кнопка "Играть" — на самом верху, если пользователь уже играл
     if has_played:
         markup.add(types.InlineKeyboardButton("💣 Играть", callback_data="play_game"))
     
-    # Кнопка регистрации
     markup.add(types.InlineKeyboardButton("🌐 Зарегистрироваться на сайте 1WIN", url="https://one-vv6776.com/?open=register&p=m1cy"))
     
-    # Кнопка привязки ID
     if has_id:
         markup.add(types.InlineKeyboardButton("🚀 Привязать ID (изменить)", callback_data="send_id"))
     else:
         markup.add(types.InlineKeyboardButton("🚀 Привязать ID", callback_data="send_id"))
     
-    # Кнопка "Моя статистика" — всегда видна
     markup.add(types.InlineKeyboardButton("📊 Моя статистика", callback_data="stats"))
-    
-    # Кнопка поддержки внизу
     markup.add(types.InlineKeyboardButton("💬 Поддержка", callback_data="support"))
     
     text = f"""👋 Приветствую тебя, {user_first_name}! в AI Signals 1Win
@@ -258,7 +256,7 @@ def show_probabilities(message):
     text = get_probabilities_table()
     
     markup = types.InlineKeyboardMarkup(row_width=1)
-    markup.add(types.InlineKeyboardButton("⏪ Назад в меню", callback_data="back"))
+    markup.add(types.InlineKeyboardButton("⏪ Назад", callback_data="back_to_game"))
     
     bot.edit_message_text(
         text,
@@ -290,6 +288,13 @@ def callback_handler(call):
     
     elif call.data == "back":
         main_menu(call.message)
+    
+    elif call.data == "back_to_game":
+        try:
+            bot.delete_message(chat_id, message_id)
+        except:
+            pass
+        mines_menu_new(call.message)
     
     elif call.data == "support":
         support_message(call.message)
@@ -388,18 +393,15 @@ def mines_menu_new(message):
     btn4 = types.InlineKeyboardButton("💣7", callback_data="mine_7")
     markup.add(btn1, btn2, btn3, btn4)
     
-    # График вероятностей — отдельной кнопкой
     markup.row(
         types.InlineKeyboardButton("📈 График вероятностей", callback_data="probabilities")
     )
     
-    # Кнопки внизу: Назад в меню слева, Играть на 1Win справа
     markup.row(
         types.InlineKeyboardButton("⏪ Назад в меню", callback_data="back"),
         types.InlineKeyboardButton("💎 Играть на 1Win", url="https://one-vv6776.com/?open=register&p=m1cy")
     )
     
-    # Поддержка снизу
     markup.row(
         types.InlineKeyboardButton("💬 Поддержка", callback_data="support")
     )
@@ -468,18 +470,15 @@ def start_game(message, mines):
     btn4 = types.InlineKeyboardButton("💣7", callback_data="mine_7")
     markup.add(btn1, btn2, btn3, btn4)
     
-    # График вероятностей — отдельной кнопкой
     markup.row(
         types.InlineKeyboardButton("📈 График вероятностей", callback_data="probabilities")
     )
     
-    # Кнопки внизу: Назад в меню слева, Играть на 1Win справа
     markup.row(
         types.InlineKeyboardButton("⏪ Назад в меню", callback_data="back"),
         types.InlineKeyboardButton("💎 Играть на 1Win", url="https://one-vv6776.com/?open=register&p=m1cy")
     )
     
-    # Поддержка снизу
     markup.row(
         types.InlineKeyboardButton("💬 Поддержка", callback_data="support")
     )
