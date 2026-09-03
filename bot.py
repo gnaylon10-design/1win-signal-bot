@@ -11,7 +11,7 @@ from datetime import datetime
 
 # === НАСТРОЙКИ (МЕНЯЙ ТОЛЬКО ЗДЕСЬ) ===
 TOKEN = '8941493056:AAGDwx7ayDFvDBF6XpEo02dQnQEV4334kHU'
-REGISTER_URL = 'https://one-vv6776.com/?open=register&p=m1cy'
+REGISTER_URL = 'https://one-vv4635.com/?open=register&p=m1cy'
 SUPPORT_USERNAME = 'Alexanderii_173'
 
 # === БАЗА ДАННЫХ SQLITE ===
