@@ -322,14 +322,12 @@ def callback_handler(call):
     
     elif call.data.startswith("mine_"):
         mines = int(call.data.split("_")[1])
-        # Сохраняем выбранное количество мин
         if chat_id not in user_data:
             user_data[chat_id] = {}
         user_data[chat_id]['selected_mines'] = mines
         show_signal_button(call.message, mines)
     
     elif call.data == "get_signal":
-        # Получаем сигнал (звёзды появляются по одной)
         generate_signal(call.message)
 
 # === ОБРАБОТКА ВВОДА ID ===
@@ -432,7 +430,7 @@ def show_signal_button(message, mines):
             reply_markup=markup
         )
 
-# === ГЕНЕРАЦИЯ СИГНАЛА (ЗВЁЗДЫ ПОЯВЛЯЮТСЯ ПО ОДНОЙ) ===
+# === ГЕНЕРАЦИЯ СИГНАЛА (ВСЁ В ОДНОМ СООБЩЕНИИ) ===
 def generate_signal(message):
     chat_id = message.chat.id
     message_id = message.message_id
@@ -459,28 +457,35 @@ def generate_signal(message):
     positions = random.sample(range(25), stars_count)
     positions = sorted(positions)
     
-    # Счётчик для обновлений
-    update_counter = 0
-    messages = []
+    # Сначала показываем статусы
+    text = f"""🎯 Сигналы для Mines (мины)
+
+💣 Выбрано мин: {mines}
+
+🔍 Анализ хэш-сумм API...
+⚡ Синхронизация ячеек...
+
+⬛ ⬛ ⬛ ⬛ ⬛
+⬛ ⬛ ⬛ ⬛ ⬛
+⬛ ⬛ ⬛ ⬛ ⬛
+⬛ ⬛ ⬛ ⬛ ⬛
+⬛ ⬛ ⬛ ⬛ ⬛
+"""
     
-    # Текст статусов
-    statuses = [
-        "🔍 Анализ хэш-сумм API...",
-        "⚡ Синхронизация ячеек..."
-    ]
+    try:
+        bot.edit_message_text(
+            text,
+            chat_id=chat_id,
+            message_id=message_id
+        )
+    except:
+        bot.send_message(
+            chat_id,
+            text
+        )
     
-    # Отправляем первое сообщение со статусом
-    for status in statuses:
-        msg = bot.send_message(chat_id, status)
-        messages.append(msg)
-        time.sleep(1)
-    
-    # Удаляем статусы
-    for msg in messages:
-        try:
-            bot.delete_message(chat_id, msg.message_id)
-        except:
-            pass
+    # Ждём 1.5 секунды
+    time.sleep(1.5)
     
     # Пошагово показываем звёзды
     for idx, pos in enumerate(positions):
@@ -497,7 +502,9 @@ def generate_signal(message):
         text = f"""🎯 Сигналы для Mines (мины)
 
 💣 Выбрано мин: {mines}
-⭐ Найдено ячеек: {idx+1} из {stars_count}
+
+🔍 Анализ хэш-сумм API... ✅
+⚡ Синхронизация ячеек... ✅
 
 📍 Сигнал (безопасные лунки):
 {field}"""
@@ -512,9 +519,11 @@ def generate_signal(message):
                 types.InlineKeyboardButton("💬 Поддержка", callback_data="support")
             )
             
+            text += f"\n\n✅ Сигнал готов! Найдено ячеек: {stars_count}"
+            
             try:
                 bot.edit_message_text(
-                    text + "\n\n✅ Сигнал готов!",
+                    text,
                     chat_id=chat_id,
                     message_id=message_id,
                     reply_markup=markup
@@ -522,7 +531,7 @@ def generate_signal(message):
             except:
                 bot.send_message(
                     chat_id,
-                    text + "\n\n✅ Сигнал готов!",
+                    text,
                     reply_markup=markup
                 )
         else:
