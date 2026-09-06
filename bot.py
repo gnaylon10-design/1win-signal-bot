@@ -11,7 +11,7 @@ from datetime import datetime
 
 # === НАСТРОЙКИ (МЕНЯЙ ТОЛЬКО ЗДЕСЬ) ===
 TOKEN = '8941493056:AAGDwx7ayDFvDBF6XpEo02dQnQEV4334kHU'
-REGISTER_URL = 'https://one-vv4635.com/?open=register&p=m1cy'
+REGISTER_URL = 'https://one-vv6776.com/?open=register&p=m1cy'
 SUPPORT_USERNAME = 'Alexanderii_173'
 
 # === БАЗА ДАННЫХ SQLITE ===
@@ -23,7 +23,8 @@ def init_db():
         user_name TEXT,
         id_1win TEXT,
         requests INTEGER DEFAULT 0,
-        registered_date TEXT
+        registered_date TEXT,
+        played INTEGER DEFAULT 0
     )''')
     conn.commit()
     conn.close()
@@ -32,7 +33,7 @@ def save_user(user_id, user_name, id_1win):
     conn = sqlite3.connect('users.db')
     cursor = conn.cursor()
     
-    cursor.execute('SELECT user_name FROM users WHERE user_id = ?', (user_id,))
+    cursor.execute('SELECT user_name, played FROM users WHERE user_id = ?', (user_id,))
     existing = cursor.fetchone()
     
     if existing and existing[0] and existing[0] != "Нет username":
@@ -40,9 +41,12 @@ def save_user(user_id, user_name, id_1win):
     else:
         final_name = user_name if user_name and user_name != "Нет username" else "Гость"
     
-    cursor.execute('''INSERT OR REPLACE INTO users (user_id, user_name, id_1win, requests, registered_date)
-                      VALUES (?, ?, ?, COALESCE((SELECT requests FROM users WHERE user_id = ?), 0), COALESCE((SELECT registered_date FROM users WHERE user_id = ?), ?))''',
-                   (user_id, final_name, id_1win, user_id, user_id, datetime.now().strftime("%Y-%m-%d %H:%M")))
+    # Сохраняем played если был
+    played = existing[1] if existing and existing[1] else 0
+    
+    cursor.execute('''INSERT OR REPLACE INTO users (user_id, user_name, id_1win, requests, registered_date, played)
+                      VALUES (?, ?, ?, COALESCE((SELECT requests FROM users WHERE user_id = ?), 0), COALESCE((SELECT registered_date FROM users WHERE user_id = ?), ?), ?)''',
+                   (user_id, final_name, id_1win, user_id, user_id, datetime.now().strftime("%Y-%m-%d %H:%M"), played))
     conn.commit()
     conn.close()
 
@@ -60,6 +64,21 @@ def increment_requests(user_id):
     cursor.execute('UPDATE users SET requests = requests + 1 WHERE user_id = ?', (user_id,))
     conn.commit()
     conn.close()
+
+def set_played(user_id):
+    conn = sqlite3.connect('users.db')
+    cursor = conn.cursor()
+    cursor.execute('UPDATE users SET played = 1 WHERE user_id = ?', (user_id,))
+    conn.commit()
+    conn.close()
+
+def get_played(user_id):
+    conn = sqlite3.connect('users.db')
+    cursor = conn.cursor()
+    cursor.execute('SELECT played FROM users WHERE user_id = ?', (user_id,))
+    result = cursor.fetchone()
+    conn.close()
+    return result[0] if result else 0
 
 init_db()
 
@@ -116,7 +135,7 @@ def main_menu(message):
             user_first_name = "Гость"
     
     has_id = user_data_db and user_data_db[2] if user_data_db else False
-    has_played = user_data.get(chat_id, {}).get('played', False)
+    has_played = get_played(chat_id) == 1
     
     markup = types.InlineKeyboardMarkup(row_width=1)
     
@@ -182,7 +201,7 @@ def start(message):
             save_user(chat_id, user_first_name, user_data_db[2])
     
     has_id = user_data_db and user_data_db[2] if user_data_db else False
-    has_played = user_data.get(chat_id, {}).get('played', False)
+    has_played = get_played(chat_id) == 1
     
     markup = types.InlineKeyboardMarkup(row_width=1)
     
@@ -234,7 +253,7 @@ def show_stats(message):
         )
         return
     
-    user_id, user_name, id_1win, requests_count, registered_date = user_data_db
+    user_id, user_name, id_1win, requests_count, registered_date, played = user_data_db
     
     if not id_1win:
         text = "❌ *ID не привязан!*\n\nПожалуйста, нажмите 'Привязать ID' в главном меню."
@@ -243,6 +262,7 @@ def show_stats(message):
         text += f"🆔 *ID в 1WIN:* {id_1win}\n"
         text += f"📈 *Запросов сигналов:* {requests_count}\n"
         text += f"📅 *Дата регистрации:* {registered_date or 'Неизвестно'}\n"
+        text += f"🎮 *Игр сыграно:* {played}\n"
     
     markup = types.InlineKeyboardMarkup(row_width=1)
     markup.add(types.InlineKeyboardButton("⏪ Назад в меню", callback_data="back"))
@@ -441,6 +461,9 @@ def show_signal_button(message, mines):
 def generate_signal(message):
     chat_id = message.chat.id
     message_id = message.message_id
+    
+    # Отмечаем, что пользователь играл (сохраняем в БД)
+    set_played(chat_id)
     
     mines = user_data.get(chat_id, {}).get('selected_mines', 1)
     
