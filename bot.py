@@ -13,6 +13,7 @@ from datetime import datetime
 TOKEN = '8941493056:AAGDwx7ayDFvDBF6XpEo02dQnQEV4334kHU'
 REGISTER_URL = 'https://one-vv4635.com/?open=register&p=m1cy'
 SUPPORT_USERNAME = 'Alexanderii_173'
+CHANNEL_URL = 'https://t.me/Signal_schannel_1win'
 
 # === БАЗА ДАННЫХ SQLITE ===
 def init_db():
@@ -65,7 +66,6 @@ def increment_requests(user_id):
     conn.close()
 
 def increment_played(user_id):
-    """Увеличивает счётчик игр на 1"""
     conn = sqlite3.connect('users.db')
     cursor = conn.cursor()
     cursor.execute('UPDATE users SET played = played + 1 WHERE user_id = ?', (user_id,))
@@ -148,8 +148,8 @@ def main_menu(message):
         markup.add(types.InlineKeyboardButton("🚀 Привязать ID (изменить)", callback_data="send_id"))
     else:
         markup.add(types.InlineKeyboardButton("🚀 Привязать ID", callback_data="send_id"))
-    
     markup.add(types.InlineKeyboardButton("📊 Моя статистика", callback_data="stats"))
+    markup.add(types.InlineKeyboardButton("📢 Наш канал", url=CHANNEL_URL))
     markup.add(types.InlineKeyboardButton("💬 Поддержка", callback_data="support"))
     
     text = f"""👋 Приветствую тебя, {user_first_name}! в AI Signals 1Win
@@ -216,6 +216,7 @@ def start(message):
         markup.add(types.InlineKeyboardButton("🚀 Привязать ID", callback_data="send_id"))
     
     markup.add(types.InlineKeyboardButton("📊 Моя статистика", callback_data="stats"))
+    markup.add(types.InlineKeyboardButton("📢 Наш канал", url=CHANNEL_URL))
     markup.add(types.InlineKeyboardButton("💬 Поддержка", callback_data="support"))
     
     text = f"""👋 Приветствую тебя, {user_first_name}! в AI Signals 1Win
@@ -462,7 +463,6 @@ def generate_signal(message):
     chat_id = message.chat.id
     message_id = message.message_id
     
-    # Увеличиваем счётчик игр на 1
     increment_played(chat_id)
     increment_requests(chat_id)
     
