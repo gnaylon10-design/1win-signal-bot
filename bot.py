@@ -13,7 +13,6 @@ from datetime import datetime
 TOKEN = '8941493056:AAGDwx7ayDFvDBF6XpEo02dQnQEV4334kHU'
 REGISTER_URL = 'https://one-vv6776.com/?open=register&p=m1cy'
 SUPPORT_USERNAME = 'Alexanderii_173'
-CHANNEL_URL = 'https://t.me/Signal_schannel_1win'  # ← НОВАЯ ПЕРЕМЕННАЯ
 
 # === БАЗА ДАННЫХ SQLITE ===
 def init_db():
@@ -99,16 +98,6 @@ thread_ping.start()
 bot = telebot.TeleBot(TOKEN)
 user_data = {}
 
-def get_probabilities_table():
-    table = "📊 *Таблица вероятностей и коэффициентов:*\n\n"
-    for mines in [1, 3, 5, 7]:
-        safe = 25 - mines
-        prob = round((safe / 25) * 100, 1)
-        coef = round(25 / safe, 2)
-        table += f"💣 *{mines}* мин → 🎯 {prob}% | 📊 {coef}x\n"
-    table += "\n_Данные актуальны для поля 5x5_"
-    return table
-
 # === ГЛАВНОЕ МЕНЮ ===
 def main_menu(message):
     chat_id = message.chat.id
@@ -142,7 +131,6 @@ def main_menu(message):
         markup.add(types.InlineKeyboardButton("🚀 Привязать ID", callback_data="send_id"))
     
     markup.add(types.InlineKeyboardButton("📊 Моя статистика", callback_data="stats"))
-    markup.add(types.InlineKeyboardButton("📢 Наш канал", url=CHANNEL_URL))
     markup.add(types.InlineKeyboardButton("💬 Поддержка", callback_data="support"))
     
     text = f"""👋 Приветствую тебя, {user_first_name}! в AI Signals 1Win
@@ -209,7 +197,6 @@ def start(message):
         markup.add(types.InlineKeyboardButton("🚀 Привязать ID", callback_data="send_id"))
     
     markup.add(types.InlineKeyboardButton("📊 Моя статистика", callback_data="stats"))
-    markup.add(types.InlineKeyboardButton("📢 Наш канал", url=CHANNEL_URL))
     markup.add(types.InlineKeyboardButton("💬 Поддержка", callback_data="support"))
     
     text = f"""👋 Приветствую тебя, {user_first_name}! в AI Signals 1Win
@@ -268,23 +255,6 @@ def show_stats(message):
         reply_markup=markup
     )
 
-# === ГРАФИК ВЕРОЯТНОСТЕЙ ===
-def show_probabilities(message):
-    chat_id = message.chat.id
-    message_id = message.message_id
-    text = get_probabilities_table()
-    
-    markup = types.InlineKeyboardMarkup(row_width=1)
-    markup.add(types.InlineKeyboardButton("⏪ Назад", callback_data="back_to_game"))
-    
-    bot.edit_message_text(
-        text,
-        chat_id=chat_id,
-        message_id=message_id,
-        parse_mode='Markdown',
-        reply_markup=markup
-    )
-
 # === ОБРАБОТКА КНОПОК ===
 @bot.callback_query_handler(func=lambda call: True)
 def callback_handler(call):
@@ -302,18 +272,8 @@ def callback_handler(call):
     elif call.data == "stats":
         show_stats(call.message)
     
-    elif call.data == "probabilities":
-        show_probabilities(call.message)
-    
     elif call.data == "back":
         main_menu(call.message)
-    
-    elif call.data == "back_to_game":
-        try:
-            bot.delete_message(chat_id, message_id)
-        except:
-            pass
-        mines_menu_new(call.message)
     
     elif call.data == "support":
         support_message(call.message)
@@ -362,10 +322,15 @@ def callback_handler(call):
     
     elif call.data.startswith("mine_"):
         mines = int(call.data.split("_")[1])
-        start_game(call.message, mines)
+        # Сохраняем выбранное количество мин
+        if chat_id not in user_data:
+            user_data[chat_id] = {}
+        user_data[chat_id]['selected_mines'] = mines
+        show_signal_button(call.message, mines)
     
-    elif call.data == "new_game":
-        mines_menu_new(call.message)
+    elif call.data == "get_signal":
+        # Получаем сигнал (звёзды появляются по одной)
+        generate_signal(call.message)
 
 # === ОБРАБОТКА ВВОДА ID ===
 def process_id_input(message):
@@ -401,7 +366,7 @@ def process_id_input(message):
         reply_markup=markup
     )
 
-# === МЕНЮ ВЫБОРА МИН (НОВОЕ СООБЩЕНИЕ) ===
+# === МЕНЮ ВЫБОРА МИН ===
 def mines_menu_new(message):
     chat_id = message.chat.id
     
@@ -413,23 +378,165 @@ def mines_menu_new(message):
     markup.add(btn1, btn2, btn3, btn4)
     
     markup.row(
-        types.InlineKeyboardButton("📈 График вероятностей", callback_data="probabilities")
+        types.InlineKeyboardButton("💎 Играть на 1Win", url=REGISTER_URL),
+        types.InlineKeyboardButton("⏪ Главное меню", callback_data="back")
     )
-    
-    markup.row(
-        types.InlineKeyboardButton("⏪ Назад в меню", callback_data="back"),
-        types.InlineKeyboardButton("💎 Играть на 1Win", url=REGISTER_URL)
-    )
-    
     markup.row(
         types.InlineKeyboardButton("💬 Поддержка", callback_data="support")
     )
     
     bot.send_message(
         chat_id,
-        "💣 Выберите количество мин для анализа раунда:",
+        "💣 Выберите количество мин для анализа:",
         reply_markup=markup
     )
+
+# === КНОПКА "ВЫДАТЬ СИГНАЛ" ===
+def show_signal_button(message, mines):
+    chat_id = message.chat.id
+    message_id = message.message_id
+    
+    markup = types.InlineKeyboardMarkup(row_width=1)
+    markup.add(types.InlineKeyboardButton("🔴 Выдать сигнал", callback_data="get_signal"))
+    markup.row(
+        types.InlineKeyboardButton("💎 Играть на 1Win", url=REGISTER_URL),
+        types.InlineKeyboardButton("⏪ Главное меню", callback_data="back")
+    )
+    markup.row(
+        types.InlineKeyboardButton("💬 Поддержка", callback_data="support")
+    )
+    
+    text = f"""🎯 Сигналы для Mines (мины)
+
+💣 Выбрано мин: {mines}
+
+⬛ ⬛ ⬛ ⬛ ⬛
+⬛ ⬛ ⬛ ⬛ ⬛
+⬛ ⬛ ⬛ ⬛ ⬛
+⬛ ⬛ ⬛ ⬛ ⬛
+⬛ ⬛ ⬛ ⬛ ⬛
+
+Нажмите кнопку ниже для получения сигнала:"""
+    
+    try:
+        bot.edit_message_text(
+            text,
+            chat_id=chat_id,
+            message_id=message_id,
+            reply_markup=markup
+        )
+    except:
+        bot.send_message(
+            chat_id,
+            text,
+            reply_markup=markup
+        )
+
+# === ГЕНЕРАЦИЯ СИГНАЛА (ЗВЁЗДЫ ПОЯВЛЯЮТСЯ ПО ОДНОЙ) ===
+def generate_signal(message):
+    chat_id = message.chat.id
+    message_id = message.message_id
+    
+    # Получаем выбранное количество мин
+    mines = user_data.get(chat_id, {}).get('selected_mines', 1)
+    
+    # Определяем количество звёзд
+    if mines == 1:
+        stars_count = random.randint(4, 7)
+    elif mines == 3:
+        stars_count = random.randint(4, 5)
+    elif mines == 5:
+        stars_count = random.randint(2, 4)
+    elif mines == 7:
+        stars_count = random.randint(1, 2)
+    else:
+        stars_count = random.randint(1, 3)
+    
+    # Создаём пустое поле
+    cells = [['⬛' for _ in range(5)] for _ in range(5)]
+    
+    # Выбираем случайные позиции для звёзд
+    positions = random.sample(range(25), stars_count)
+    positions = sorted(positions)
+    
+    # Счётчик для обновлений
+    update_counter = 0
+    messages = []
+    
+    # Текст статусов
+    statuses = [
+        "🔍 Анализ хэш-сумм API...",
+        "⚡ Синхронизация ячеек..."
+    ]
+    
+    # Отправляем первое сообщение со статусом
+    for status in statuses:
+        msg = bot.send_message(chat_id, status)
+        messages.append(msg)
+        time.sleep(1)
+    
+    # Удаляем статусы
+    for msg in messages:
+        try:
+            bot.delete_message(chat_id, msg.message_id)
+        except:
+            pass
+    
+    # Пошагово показываем звёзды
+    for idx, pos in enumerate(positions):
+        row = pos // 5
+        col = pos % 5
+        cells[row][col] = '⭐'
+        
+        # Формируем поле
+        field = ""
+        for r in range(5):
+            field += ' '.join(cells[r]) + '\n'
+        
+        # Формируем текст
+        text = f"""🎯 Сигналы для Mines (мины)
+
+💣 Выбрано мин: {mines}
+⭐ Найдено ячеек: {idx+1} из {stars_count}
+
+📍 Сигнал (безопасные лунки):
+{field}"""
+        
+        if idx == len(positions) - 1:
+            markup = types.InlineKeyboardMarkup(row_width=2)
+            markup.row(
+                types.InlineKeyboardButton("🔄 Новый сигнал", callback_data="play_game"),
+                types.InlineKeyboardButton("⏪ Главное меню", callback_data="back")
+            )
+            markup.row(
+                types.InlineKeyboardButton("💬 Поддержка", callback_data="support")
+            )
+            
+            try:
+                bot.edit_message_text(
+                    text + "\n\n✅ Сигнал готов!",
+                    chat_id=chat_id,
+                    message_id=message_id,
+                    reply_markup=markup
+                )
+            except:
+                bot.send_message(
+                    chat_id,
+                    text + "\n\n✅ Сигнал готов!",
+                    reply_markup=markup
+                )
+        else:
+            # Обновляем сообщение
+            try:
+                bot.edit_message_text(
+                    text,
+                    chat_id=chat_id,
+                    message_id=message_id
+                )
+            except:
+                pass
+            
+            time.sleep(0.8)
 
 # === ПОДДЕРЖКА ===
 def support_message(message):
@@ -451,78 +558,6 @@ def support_message(message):
         bot.send_message(
             chat_id,
             f"💬 Центр поддержки 1Win Signal\n\nВозникли вопросы по работе бота, привязке ID или выводу средств? Свяжитесь с нашей службой поддержки, и мы решим любой вопрос!\n\n👉 Напишите нашему администратору: @{SUPPORT_USERNAME}",
-            reply_markup=markup
-        )
-
-# === ИГРА ===
-def start_game(message, mines):
-    chat_id = message.chat.id
-    message_id = message.message_id
-    
-    if chat_id not in user_data:
-        user_data[chat_id] = {}
-    user_data[chat_id]['played'] = True
-    
-    increment_requests(chat_id)
-    
-    cells = [['⬛' for _ in range(5)] for _ in range(5)]
-    safe_cells = 25 - mines
-    probability = round((safe_cells / 25) * 100, 1)
-    coefficient = round(25 / safe_cells, 2)
-    
-    safe_positions = random.sample(range(25), mines)
-    safe_positions = sorted(safe_positions)
-    
-    for pos in safe_positions:
-        row = pos // 5
-        col = pos % 5
-        cells[row][col] = '⭐'
-    
-    field = ""
-    for row in cells:
-        field += ' '.join(row) + '\n'
-    
-    markup = types.InlineKeyboardMarkup(row_width=4)
-    btn1 = types.InlineKeyboardButton("💣1", callback_data="mine_1")
-    btn2 = types.InlineKeyboardButton("💣3", callback_data="mine_3")
-    btn3 = types.InlineKeyboardButton("💣5", callback_data="mine_5")
-    btn4 = types.InlineKeyboardButton("💣7", callback_data="mine_7")
-    markup.add(btn1, btn2, btn3, btn4)
-    
-    markup.row(
-        types.InlineKeyboardButton("📈 График вероятностей", callback_data="probabilities")
-    )
-    
-    markup.row(
-        types.InlineKeyboardButton("⏪ Назад в меню", callback_data="back"),
-        types.InlineKeyboardButton("💎 Играть на 1Win", url=REGISTER_URL)
-    )
-    
-    markup.row(
-        types.InlineKeyboardButton("💬 Поддержка", callback_data="support")
-    )
-    
-    try:
-        bot.edit_message_text(
-            f"⚙️ Анализ параметров:\n"
-            f"💣 Количество мин: {mines}\n"
-            f"🎯 Вероятность успеха: {probability}%\n"
-            f"📊 Ожидаемый коэффициент (Шаг 1): {coefficient}x\n\n"
-            f"📍 Сигнал (безопасные лунки):\n{field}\n\n"
-            f"🔄 Выберите другое количество или перейдите к игре:",
-            chat_id=chat_id,
-            message_id=message_id,
-            reply_markup=markup
-        )
-    except:
-        bot.send_message(
-            chat_id,
-            f"⚙️ Анализ параметров:\n"
-            f"💣 Количество мин: {mines}\n"
-            f"🎯 Вероятность успеха: {probability}%\n"
-            f"📊 Ожидаемый коэффициент (Шаг 1): {coefficient}x\n\n"
-            f"📍 Сигнал (безопасные лунки):\n{field}\n\n"
-            f"🔄 Выберите другое количество или перейдите к игре:",
             reply_markup=markup
         )
 
