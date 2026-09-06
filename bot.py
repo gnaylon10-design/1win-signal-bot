@@ -41,7 +41,6 @@ def save_user(user_id, user_name, id_1win):
     else:
         final_name = user_name if user_name and user_name != "Нет username" else "Гость"
     
-    # Сохраняем played если был
     played = existing[1] if existing and existing[1] else 0
     
     cursor.execute('''INSERT OR REPLACE INTO users (user_id, user_name, id_1win, requests, registered_date, played)
@@ -65,10 +64,11 @@ def increment_requests(user_id):
     conn.commit()
     conn.close()
 
-def set_played(user_id):
+def increment_played(user_id):
+    """Увеличивает счётчик игр на 1"""
     conn = sqlite3.connect('users.db')
     cursor = conn.cursor()
-    cursor.execute('UPDATE users SET played = 1 WHERE user_id = ?', (user_id,))
+    cursor.execute('UPDATE users SET played = played + 1 WHERE user_id = ?', (user_id,))
     conn.commit()
     conn.close()
 
@@ -135,7 +135,7 @@ def main_menu(message):
             user_first_name = "Гость"
     
     has_id = user_data_db and user_data_db[2] if user_data_db else False
-    has_played = get_played(chat_id) == 1
+    has_played = get_played(chat_id) > 0
     
     markup = types.InlineKeyboardMarkup(row_width=1)
     
@@ -201,7 +201,7 @@ def start(message):
             save_user(chat_id, user_first_name, user_data_db[2])
     
     has_id = user_data_db and user_data_db[2] if user_data_db else False
-    has_played = get_played(chat_id) == 1
+    has_played = get_played(chat_id) > 0
     
     markup = types.InlineKeyboardMarkup(row_width=1)
     
@@ -261,8 +261,8 @@ def show_stats(message):
         text = f"📊 *Твоя статистика:*\n\n"
         text += f"🆔 *ID в 1WIN:* {id_1win}\n"
         text += f"📈 *Запросов сигналов:* {requests_count}\n"
-        text += f"📅 *Дата регистрации:* {registered_date or 'Неизвестно'}\n"
         text += f"🎮 *Игр сыграно:* {played}\n"
+        text += f"📅 *Дата регистрации:* {registered_date or 'Неизвестно'}\n"
     
     markup = types.InlineKeyboardMarkup(row_width=1)
     markup.add(types.InlineKeyboardButton("⏪ Назад в меню", callback_data="back"))
@@ -462,8 +462,9 @@ def generate_signal(message):
     chat_id = message.chat.id
     message_id = message.message_id
     
-    # Отмечаем, что пользователь играл (сохраняем в БД)
-    set_played(chat_id)
+    # Увеличиваем счётчик игр на 1
+    increment_played(chat_id)
+    increment_requests(chat_id)
     
     mines = user_data.get(chat_id, {}).get('selected_mines', 1)
     
