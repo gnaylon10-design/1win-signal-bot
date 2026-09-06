@@ -376,8 +376,8 @@ def mines_menu_new(message):
     markup.add(btn1, btn2, btn3, btn4)
     
     markup.row(
-        types.InlineKeyboardButton("💎 Играть на 1Win", url=REGISTER_URL),
-        types.InlineKeyboardButton("⏪ Главное меню", callback_data="back")
+        types.InlineKeyboardButton("⏪ Главное меню", callback_data="back"),
+        types.InlineKeyboardButton("💎 Играть на 1Win", url=REGISTER_URL)
     )
     markup.row(
         types.InlineKeyboardButton("💬 Поддержка", callback_data="support")
@@ -394,7 +394,6 @@ def show_signal_button(message, mines):
     chat_id = message.chat.id
     message_id = message.message_id
     
-    # Кнопки с минами всегда сверху
     markup = types.InlineKeyboardMarkup(row_width=4)
     btn1 = types.InlineKeyboardButton("💣1", callback_data="mine_1")
     btn2 = types.InlineKeyboardButton("💣3", callback_data="mine_3")
@@ -405,8 +404,8 @@ def show_signal_button(message, mines):
     markup.row(types.InlineKeyboardButton("🔴 Выдать сигнал", callback_data="get_signal"))
     
     markup.row(
-        types.InlineKeyboardButton("💎 Играть на 1Win", url=REGISTER_URL),
-        types.InlineKeyboardButton("⏪ Главное меню", callback_data="back")
+        types.InlineKeyboardButton("⏪ Главное меню", callback_data="back"),
+        types.InlineKeyboardButton("💎 Играть на 1Win", url=REGISTER_URL)
     )
     markup.row(
         types.InlineKeyboardButton("💬 Поддержка", callback_data="support")
@@ -443,10 +442,8 @@ def generate_signal(message):
     chat_id = message.chat.id
     message_id = message.message_id
     
-    # Получаем выбранное количество мин
     mines = user_data.get(chat_id, {}).get('selected_mines', 1)
     
-    # Определяем количество звёзд
     if mines == 1:
         stars_count = random.randint(4, 7)
     elif mines == 3:
@@ -458,15 +455,10 @@ def generate_signal(message):
     else:
         stars_count = random.randint(1, 3)
     
-    # Создаём пустое поле
     cells = [['⬛' for _ in range(5)] for _ in range(5)]
-    
-    # Выбираем случайные позиции для звёзд
     positions = random.sample(range(25), stars_count)
     positions = sorted(positions)
     
-    # === ШАГ 1: Показываем "Анализ хэш-сумм API..." ===
-    # Кнопки с минами всегда сверху
     markup_status = types.InlineKeyboardMarkup(row_width=4)
     btn1 = types.InlineKeyboardButton("💣1", callback_data="mine_1")
     btn2 = types.InlineKeyboardButton("💣3", callback_data="mine_3")
@@ -475,8 +467,8 @@ def generate_signal(message):
     markup_status.add(btn1, btn2, btn3, btn4)
     markup_status.row(types.InlineKeyboardButton("🔴 Выдать сигнал", callback_data="get_signal"))
     markup_status.row(
-        types.InlineKeyboardButton("💎 Играть на 1Win", url=REGISTER_URL),
-        types.InlineKeyboardButton("⏪ Главное меню", callback_data="back")
+        types.InlineKeyboardButton("⏪ Главное меню", callback_data="back"),
+        types.InlineKeyboardButton("💎 Играть на 1Win", url=REGISTER_URL)
     )
     markup_status.row(
         types.InlineKeyboardButton("💬 Поддержка", callback_data="support")
@@ -511,7 +503,6 @@ def generate_signal(message):
     
     time.sleep(1.5)
     
-    # === ШАГ 2: Показываем "Синхронизация ячеек..." ===
     text_status2 = f"""🎯 Сигналы для Mines (мины)
 
 💣 Выбрано мин: {mines}
@@ -537,18 +528,15 @@ def generate_signal(message):
     
     time.sleep(1.5)
     
-    # === ШАГ 3: Пошагово показываем звёзды ===
     for idx, pos in enumerate(positions):
         row = pos // 5
         col = pos % 5
         cells[row][col] = '⭐'
         
-        # Формируем поле
         field = ""
         for r in range(5):
             field += ' '.join(cells[r]) + '\n'
         
-        # Формируем текст
         text = f"""🎯 Сигналы для Mines (мины)
 
 💣 Выбрано мин: {mines}
@@ -557,7 +545,6 @@ def generate_signal(message):
 {field}"""
         
         if idx == len(positions) - 1:
-            # Финальное сообщение с кнопками
             markup_final = types.InlineKeyboardMarkup(row_width=4)
             btn1 = types.InlineKeyboardButton("💣1", callback_data="mine_1")
             btn2 = types.InlineKeyboardButton("💣3", callback_data="mine_3")
@@ -566,8 +553,8 @@ def generate_signal(message):
             markup_final.add(btn1, btn2, btn3, btn4)
             markup_final.row(types.InlineKeyboardButton("🔴 Выдать сигнал", callback_data="get_signal"))
             markup_final.row(
-                types.InlineKeyboardButton("💎 Играть на 1Win", url=REGISTER_URL),
-                types.InlineKeyboardButton("⏪ Главное меню", callback_data="back")
+                types.InlineKeyboardButton("⏪ Главное меню", callback_data="back"),
+                types.InlineKeyboardButton("💎 Играть на 1Win", url=REGISTER_URL)
             )
             markup_final.row(
                 types.InlineKeyboardButton("💬 Поддержка", callback_data="support")
@@ -589,7 +576,6 @@ def generate_signal(message):
                     reply_markup=markup_final
                 )
         else:
-            # Обновляем сообщение
             try:
                 bot.edit_message_text(
                     text,
