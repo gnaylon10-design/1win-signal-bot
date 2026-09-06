@@ -394,8 +394,16 @@ def show_signal_button(message, mines):
     chat_id = message.chat.id
     message_id = message.message_id
     
-    markup = types.InlineKeyboardMarkup(row_width=1)
-    markup.add(types.InlineKeyboardButton("🔴 Выдать сигнал", callback_data="get_signal"))
+    # Кнопки с минами всегда сверху
+    markup = types.InlineKeyboardMarkup(row_width=4)
+    btn1 = types.InlineKeyboardButton("💣1", callback_data="mine_1")
+    btn2 = types.InlineKeyboardButton("💣3", callback_data="mine_3")
+    btn3 = types.InlineKeyboardButton("💣5", callback_data="mine_5")
+    btn4 = types.InlineKeyboardButton("💣7", callback_data="mine_7")
+    markup.add(btn1, btn2, btn3, btn4)
+    
+    markup.row(types.InlineKeyboardButton("🔴 Выдать сигнал", callback_data="get_signal"))
+    
     markup.row(
         types.InlineKeyboardButton("💎 Играть на 1Win", url=REGISTER_URL),
         types.InlineKeyboardButton("⏪ Главное меню", callback_data="back")
@@ -414,7 +422,7 @@ def show_signal_button(message, mines):
 ⬛ ⬛ ⬛ ⬛ ⬛
 ⬛ ⬛ ⬛ ⬛ ⬛
 
-Нажмите кнопку ниже для получения сигнала:"""
+Нажмите "Выдать сигнал" для получения анализа:"""
     
     try:
         bot.edit_message_text(
@@ -430,7 +438,7 @@ def show_signal_button(message, mines):
             reply_markup=markup
         )
 
-# === ГЕНЕРАЦИЯ СИГНАЛА (ВСЁ В ОДНОМ СООБЩЕНИИ) ===
+# === ГЕНЕРАЦИЯ СИГНАЛА ===
 def generate_signal(message):
     chat_id = message.chat.id
     message_id = message.message_id
@@ -457,12 +465,57 @@ def generate_signal(message):
     positions = random.sample(range(25), stars_count)
     positions = sorted(positions)
     
-    # Сначала показываем статусы
-    text = f"""🎯 Сигналы для Mines (мины)
+    # === ШАГ 1: Показываем "Анализ хэш-сумм API..." ===
+    # Кнопки с минами всегда сверху
+    markup_status = types.InlineKeyboardMarkup(row_width=4)
+    btn1 = types.InlineKeyboardButton("💣1", callback_data="mine_1")
+    btn2 = types.InlineKeyboardButton("💣3", callback_data="mine_3")
+    btn3 = types.InlineKeyboardButton("💣5", callback_data="mine_5")
+    btn4 = types.InlineKeyboardButton("💣7", callback_data="mine_7")
+    markup_status.add(btn1, btn2, btn3, btn4)
+    markup_status.row(types.InlineKeyboardButton("🔴 Выдать сигнал", callback_data="get_signal"))
+    markup_status.row(
+        types.InlineKeyboardButton("💎 Играть на 1Win", url=REGISTER_URL),
+        types.InlineKeyboardButton("⏪ Главное меню", callback_data="back")
+    )
+    markup_status.row(
+        types.InlineKeyboardButton("💬 Поддержка", callback_data="support")
+    )
+    
+    text_status = f"""🎯 Сигналы для Mines (мины)
 
 💣 Выбрано мин: {mines}
 
 🔍 Анализ хэш-сумм API...
+
+⬛ ⬛ ⬛ ⬛ ⬛
+⬛ ⬛ ⬛ ⬛ ⬛
+⬛ ⬛ ⬛ ⬛ ⬛
+⬛ ⬛ ⬛ ⬛ ⬛
+⬛ ⬛ ⬛ ⬛ ⬛
+"""
+    
+    try:
+        bot.edit_message_text(
+            text_status,
+            chat_id=chat_id,
+            message_id=message_id,
+            reply_markup=markup_status
+        )
+    except:
+        bot.send_message(
+            chat_id,
+            text_status,
+            reply_markup=markup_status
+        )
+    
+    time.sleep(1.5)
+    
+    # === ШАГ 2: Показываем "Синхронизация ячеек..." ===
+    text_status2 = f"""🎯 Сигналы для Mines (мины)
+
+💣 Выбрано мин: {mines}
+
 ⚡ Синхронизация ячеек...
 
 ⬛ ⬛ ⬛ ⬛ ⬛
@@ -474,20 +527,17 @@ def generate_signal(message):
     
     try:
         bot.edit_message_text(
-            text,
+            text_status2,
             chat_id=chat_id,
-            message_id=message_id
+            message_id=message_id,
+            reply_markup=markup_status
         )
     except:
-        bot.send_message(
-            chat_id,
-            text
-        )
+        pass
     
-    # Ждём 1.5 секунды
     time.sleep(1.5)
     
-    # Пошагово показываем звёзды
+    # === ШАГ 3: Пошагово показываем звёзды ===
     for idx, pos in enumerate(positions):
         row = pos // 5
         col = pos % 5
@@ -503,19 +553,23 @@ def generate_signal(message):
 
 💣 Выбрано мин: {mines}
 
-🔍 Анализ хэш-сумм API... ✅
-⚡ Синхронизация ячеек... ✅
-
 📍 Сигнал (безопасные лунки):
 {field}"""
         
         if idx == len(positions) - 1:
-            markup = types.InlineKeyboardMarkup(row_width=2)
-            markup.row(
-                types.InlineKeyboardButton("🔄 Новый сигнал", callback_data="play_game"),
+            # Финальное сообщение с кнопками
+            markup_final = types.InlineKeyboardMarkup(row_width=4)
+            btn1 = types.InlineKeyboardButton("💣1", callback_data="mine_1")
+            btn2 = types.InlineKeyboardButton("💣3", callback_data="mine_3")
+            btn3 = types.InlineKeyboardButton("💣5", callback_data="mine_5")
+            btn4 = types.InlineKeyboardButton("💣7", callback_data="mine_7")
+            markup_final.add(btn1, btn2, btn3, btn4)
+            markup_final.row(types.InlineKeyboardButton("🔴 Выдать сигнал", callback_data="get_signal"))
+            markup_final.row(
+                types.InlineKeyboardButton("💎 Играть на 1Win", url=REGISTER_URL),
                 types.InlineKeyboardButton("⏪ Главное меню", callback_data="back")
             )
-            markup.row(
+            markup_final.row(
                 types.InlineKeyboardButton("💬 Поддержка", callback_data="support")
             )
             
@@ -526,13 +580,13 @@ def generate_signal(message):
                     text,
                     chat_id=chat_id,
                     message_id=message_id,
-                    reply_markup=markup
+                    reply_markup=markup_final
                 )
             except:
                 bot.send_message(
                     chat_id,
                     text,
-                    reply_markup=markup
+                    reply_markup=markup_final
                 )
         else:
             # Обновляем сообщение
@@ -540,7 +594,8 @@ def generate_signal(message):
                 bot.edit_message_text(
                     text,
                     chat_id=chat_id,
-                    message_id=message_id
+                    message_id=message_id,
+                    reply_markup=markup_status
                 )
             except:
                 pass
