@@ -148,8 +148,9 @@ def main_menu(message):
         markup.add(types.InlineKeyboardButton("🚀 Привязать ID (изменить)", callback_data="send_id"))
     else:
         markup.add(types.InlineKeyboardButton("🚀 Привязать ID", callback_data="send_id"))
-    markup.add(types.InlineKeyboardButton("📊 Моя статистика", callback_data="stats"))
+    
     markup.add(types.InlineKeyboardButton("📢 Наш канал", url=CHANNEL_URL))
+    markup.add(types.InlineKeyboardButton("📊 Моя статистика", callback_data="stats"))
     markup.add(types.InlineKeyboardButton("💬 Поддержка", callback_data="support"))
     
     text = f"""👋 Приветствую тебя, {user_first_name}! в AI Signals 1Win
@@ -215,8 +216,8 @@ def start(message):
     else:
         markup.add(types.InlineKeyboardButton("🚀 Привязать ID", callback_data="send_id"))
     
-    markup.add(types.InlineKeyboardButton("📊 Моя статистика", callback_data="stats"))
     markup.add(types.InlineKeyboardButton("📢 Наш канал", url=CHANNEL_URL))
+    markup.add(types.InlineKeyboardButton("📊 Моя статистика", callback_data="stats"))
     markup.add(types.InlineKeyboardButton("💬 Поддержка", callback_data="support"))
     
     text = f"""👋 Приветствую тебя, {user_first_name}! в AI Signals 1Win
@@ -343,10 +344,22 @@ def callback_handler(call):
     
     elif call.data.startswith("mine_"):
         mines = int(call.data.split("_")[1])
-        if chat_id not in user_data:
-            user_data[chat_id] = {}
-        user_data[chat_id]['selected_mines'] = mines
-        show_signal_button(call.message, mines)
+        
+        # Проверяем, не выбраны ли уже такие же мины
+        current_mines = user_data.get(chat_id, {}).get('selected_mines')
+        
+        if current_mines == mines:
+            # Если такие же мины уже выбраны — просто обновляем текущее сообщение
+            try:
+                show_signal_button_edit(call.message, mines)
+            except:
+                pass
+        else:
+            # Если мины другие — сохраняем и показываем
+            if chat_id not in user_data:
+                user_data[chat_id] = {}
+            user_data[chat_id]['selected_mines'] = mines
+            show_signal_button(call.message, mines)
     
     elif call.data == "get_signal":
         generate_signal(call.message)
@@ -410,7 +423,7 @@ def mines_menu_new(message):
         reply_markup=markup
     )
 
-# === КНОПКА "ВЫДАТЬ СИГНАЛ" ===
+# === КНОПКА "ВЫДАТЬ СИГНАЛ" (НОВОЕ СООБЩЕНИЕ) ===
 def show_signal_button(message, mines):
     chat_id = message.chat.id
     message_id = message.message_id
@@ -457,6 +470,50 @@ def show_signal_button(message, mines):
             text,
             reply_markup=markup
         )
+
+# === КНОПКА "ВЫДАТЬ СИГНАЛ" (ОБНОВЛЕНИЕ ТЕКУЩЕГО) ===
+def show_signal_button_edit(message, mines):
+    chat_id = message.chat.id
+    message_id = message.message_id
+    
+    markup = types.InlineKeyboardMarkup(row_width=4)
+    btn1 = types.InlineKeyboardButton("💣1", callback_data="mine_1")
+    btn2 = types.InlineKeyboardButton("💣3", callback_data="mine_3")
+    btn3 = types.InlineKeyboardButton("💣5", callback_data="mine_5")
+    btn4 = types.InlineKeyboardButton("💣7", callback_data="mine_7")
+    markup.add(btn1, btn2, btn3, btn4)
+    
+    markup.row(types.InlineKeyboardButton("🔴 Выдать сигнал", callback_data="get_signal"))
+    
+    markup.row(
+        types.InlineKeyboardButton("⏪ Главное меню", callback_data="back"),
+        types.InlineKeyboardButton("💎 Играть на 1Win", url=REGISTER_URL)
+    )
+    markup.row(
+        types.InlineKeyboardButton("💬 Поддержка", callback_data="support")
+    )
+    
+    text = f"""🎯 Сигналы для Mines (мины)
+
+💣 Выбрано мин: {mines}
+
+⬛ ⬛ ⬛ ⬛ ⬛
+⬛ ⬛ ⬛ ⬛ ⬛
+⬛ ⬛ ⬛ ⬛ ⬛
+⬛ ⬛ ⬛ ⬛ ⬛
+⬛ ⬛ ⬛ ⬛ ⬛
+
+Нажмите "Выдать сигнал" для получения анализа:"""
+    
+    try:
+        bot.edit_message_text(
+            text,
+            chat_id=chat_id,
+            message_id=message_id,
+            reply_markup=markup
+        )
+    except:
+        pass
 
 # === ГЕНЕРАЦИЯ СИГНАЛА ===
 def generate_signal(message):
